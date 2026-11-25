@@ -48,8 +48,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: MetzlerConfigEntry) -> 
     """Unload a config entry."""
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        ir.async_delete_issue(hass, DOMAIN, ISSUE_CERTIFICATE)
-        ir.async_delete_issue(hass, DOMAIN, ISSUE_CLOCK_DRIFT)
+        coordinator = entry.runtime_data
+        ir.async_delete_issue(hass, DOMAIN, coordinator.issue_id(ISSUE_CERTIFICATE))
+        ir.async_delete_issue(hass, DOMAIN, coordinator.issue_id(ISSUE_CLOCK_DRIFT))
     return unloaded
 
 

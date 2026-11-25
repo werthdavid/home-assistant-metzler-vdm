@@ -40,6 +40,11 @@ class ValidUnlockEvent(MetzlerEntity, EventEntity):
         self._attr_unique_id = f"{entry.entry_id}_door_{door}_valid_unlock"
         self._attr_translation_placeholders = {"door": str(door)}
 
+    @property
+    def available(self) -> bool:
+        """Stay available: unavailable -> last event would look like a new unlock."""
+        return True
+
     @callback
     def _handle_coordinator_update(self) -> None:
         """Fire events for new unlocks, only after a fully successful poll."""

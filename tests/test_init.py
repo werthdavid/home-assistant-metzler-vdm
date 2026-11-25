@@ -6,7 +6,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNKNOWN
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
@@ -74,7 +74,7 @@ def track_events(hass, ent_id) -> list[Event]:
 def assert_no_event(hass, ent_id) -> None:
     """The event entity never fired (state unknown, or unavailable on errors)."""
     state = hass.states.get(ent_id)
-    assert state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE)
+    assert state.state == STATE_UNKNOWN
     assert "employee_no" not in state.attributes
 
 
@@ -170,14 +170,14 @@ async def test_certificate_mismatch(hass, config_entry, mock_client, freezer):
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_OFF
     assert_no_event(hass, event_id(hass, config_entry))
     registry = ir.async_get(hass)
-    issue = registry.async_get_issue(DOMAIN, "certificate_mismatch")
+    issue = registry.async_get_issue(DOMAIN, f"certificate_mismatch_{config_entry.entry_id}")
     assert issue is not None
     assert issue.severity is ir.IssueSeverity.ERROR
     assert issue.is_fixable is False
 
     mock_client.async_search_valid_card_events.side_effect = None
     await poll(hass, freezer)
-    assert registry.async_get_issue(DOMAIN, "certificate_mismatch") is None
+    assert registry.async_get_issue(DOMAIN, f"certificate_mismatch_{config_entry.entry_id}") is None
 
 
 async def test_auth_error_sets_connectivity_off(
@@ -218,7 +218,7 @@ async def test_clock_drift_issue(hass, config_entry, mock_client, freezer):
         dt_util.utcnow() + timedelta(seconds=30)
     )
     await setup(hass, config_entry)
-    issue = registry.async_get_issue(DOMAIN, "clock_drift")
+    issue = registry.async_get_issue(DOMAIN, f"clock_drift_{config_entry.entry_id}")
     assert issue is not None
     assert issue.translation_placeholders == {"seconds": "30"}
     assert config_entry.runtime_data.clock_drift == pytest.approx(30)
@@ -230,7 +230,7 @@ async def test_clock_drift_issue(hass, config_entry, mock_client, freezer):
     freezer.tick(timedelta(seconds=3600))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert registry.async_get_issue(DOMAIN, "clock_drift") is None
+    assert registry.async_get_issue(DOMAIN, f"clock_drift_{config_entry.entry_id}") is None
 
 
 async def test_clock_check_not_supported_disables_check(
@@ -238,7 +238,7 @@ async def test_clock_check_not_supported_disables_check(
 ):
     mock_client.async_get_device_time.side_effect = MetzlerNotSupportedError("404")
     await setup(hass, config_entry)
-    assert ir.async_get(hass).async_get_issue(DOMAIN, "clock_drift") is None
+    assert ir.async_get(hass).async_get_issue(DOMAIN, f"clock_drift_{config_entry.entry_id}") is None
     assert mock_client.async_get_device_time.await_count == 1
 
     freezer.tick(timedelta(seconds=3600))
@@ -254,3 +254,52 @@ async def test_clock_query_error_keeps_connectivity_on(
     mock_client.async_get_device_time.side_effect = MetzlerConnectionError("down")
     await setup(hass, config_entry)
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_ON
+
+
+async def test_outage_causes_no_event_state_change(
+    hass, config_entry, mock_client, freezer
+):
+    await setup(hass, config_entry)
+    ent_id = event_id(hass, config_entry)
+    changes: list[Event] = []
+
+    @callback
+    def _flt(data) -> bool:
+        return data["entity_id"] == ent_id
+
+    hass.bus.async_listen("state_changed", changes.append, event_filter=_flt)
+    mock_client.async_search_valid_card_events.side_effect = MetzlerConnectionError(
+        "down"
+    )
+    await poll(hass, freezer, 5)
+    mock_client.async_search_valid_card_events.side_effect = None
+    await poll(hass, freezer, 3)
+    assert changes == []
+    assert hass.states.get(ent_id).state == STATE_UNKNOWN
+
+
+async def test_recovery_without_new_unlock_causes_no_state_change(
+    hass, config_entry, mock_client, freezer
+):
+    await setup(hass, config_entry)
+    ent_id = event_id(hass, config_entry)
+    mock_client.async_search_valid_card_events.return_value = [R]
+    await poll(hass, freezer, 1)
+    fired = hass.states.get(ent_id).state
+    assert fired != STATE_UNKNOWN
+
+    changes: list[Event] = []
+
+    @callback
+    def _flt(data) -> bool:
+        return data["entity_id"] == ent_id
+
+    hass.bus.async_listen("state_changed", changes.append, event_filter=_flt)
+    mock_client.async_search_valid_card_events.side_effect = MetzlerConnectionError(
+        "down"
+    )
+    await poll(hass, freezer, 5)
+    mock_client.async_search_valid_card_events.side_effect = None
+    await poll(hass, freezer, 3)
+    assert changes == []
+    assert hass.states.get(ent_id).state == fired

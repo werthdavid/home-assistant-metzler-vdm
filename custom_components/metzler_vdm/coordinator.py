@@ -66,6 +66,10 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         self._next_drift_check = 0.0
         self.clock_drift: float | None = None
 
+    def issue_id(self, key: str) -> str:
+        """Return the per-entry issue id for a translation key."""
+        return f"{key}_{self.config_entry.entry_id}"
+
     async def _async_update_data(self) -> list[Unlock]:
         """Fetch records; fire nothing unless everything succeeded."""
         now = datetime.now(self._tz)
@@ -78,7 +82,7 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
             ir.async_create_issue(
                 self.hass,
                 DOMAIN,
-                ISSUE_CERTIFICATE,
+                self.issue_id(ISSUE_CERTIFICATE),
                 is_fixable=False,
                 severity=ir.IssueSeverity.ERROR,
                 translation_key=ISSUE_CERTIFICATE,
@@ -89,7 +93,7 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         except MetzlerError as err:
             raise UpdateFailed(str(err)) from err
 
-        ir.async_delete_issue(self.hass, DOMAIN, ISSUE_CERTIFICATE)
+        ir.async_delete_issue(self.hass, DOMAIN, self.issue_id(ISSUE_CERTIFICATE))
         unlocks = self._tracker.process(records, time.monotonic())
         for unlock in unlocks:
             if unlock.door_no not in self._doors:
@@ -110,7 +114,7 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
             _LOGGER.debug("Device time not supported; clock check disabled")
             self._drift_supported = False
             self.clock_drift = None
-            ir.async_delete_issue(self.hass, DOMAIN, ISSUE_CLOCK_DRIFT)
+            ir.async_delete_issue(self.hass, DOMAIN, self.issue_id(ISSUE_CLOCK_DRIFT))
             return
         except MetzlerError as err:
             _LOGGER.debug("Device time query failed: %s", err)
@@ -123,11 +127,11 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
             ir.async_create_issue(
                 self.hass,
                 DOMAIN,
-                ISSUE_CLOCK_DRIFT,
+                self.issue_id(ISSUE_CLOCK_DRIFT),
                 is_fixable=False,
                 severity=ir.IssueSeverity.WARNING,
                 translation_key=ISSUE_CLOCK_DRIFT,
                 translation_placeholders={"seconds": str(round(abs(drift)))},
             )
         else:
-            ir.async_delete_issue(self.hass, DOMAIN, ISSUE_CLOCK_DRIFT)
+            ir.async_delete_issue(self.hass, DOMAIN, self.issue_id(ISSUE_CLOCK_DRIFT))
