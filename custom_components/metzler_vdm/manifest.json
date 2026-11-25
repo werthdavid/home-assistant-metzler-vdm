@@ -3,10 +3,10 @@
   "name": "Metzler VDM",
   "codeowners": [],
   "config_flow": true,
-  "documentation": "https://example.com/metzler_vdm",
+  "documentation": "https://github.com/werthdavid/home-assistant-metzler-vdm",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://example.com/metzler_vdm/issues",
+  "issue_tracker": "https://github.com/werthdavid/home-assistant-metzler-vdm/issues",
   "requirements": [],
-  "version": "0.1.0"
+  "version": "0.2.0"
 }
