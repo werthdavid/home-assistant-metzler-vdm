@@ -58,8 +58,8 @@ hacs.json, README.md
 ## Abfragelogik
 
 1. Pro Poll: `startTime` = jetzt minus 60 s, `endTime` = jetzt plus 24 h, `major: 5`, `minor: 1`, `maxResults: 10`. Bei `MORE` mit `searchResultPosition` weiterblättern (Obergrenze 10 Seiten, darüber gilt der Poll als fehlgeschlagen).
-2. Zeiten werden in der konfigurierten Stationszeitzone mit Offset formatiert.
-3. Dedup-Schlüssel: (`time`, `employeeNoString`, `doorNo`). Merkspeicher verwirft Schlüssel, die 300 s lang in keiner Antwort mehr vorkamen (nicht anhand berechneter Zeiten, wegen Zeitumstellung).
+2. Zeiten werden in der konfigurierten Stationszeitzone mit Offset formatiert. Das Fenster wird in UTC berechnet und erst danach in die Stationszeitzone umgerechnet (Wanduhr-Arithmetik würde es bei der Zeitumstellung um eine Stunde verschieben).
+3. Dedup-Schlüssel: (`time`, `employeeNoString`, `doorNo`). Merkspeicher verwirft Schlüssel, die 7200 s lang in keiner Antwort mehr vorkamen (nicht anhand berechneter Zeiten, wegen Zeitumstellung). 7200 s statt 300 s, weil die Station naive Ortszeiten speichert und Einträge aus der doppelten Stunde am Ende der Sommerzeit im zweiten Durchlauf erneut liefern kann.
 4. Erster erfolgreicher Poll nach Start füllt nur den Merkspeicher.
 5. Nach einem Ausfall feuern Öffnungen, die noch im 60-s-Fenster liegen. Ältere nicht.
 6. Polls überlappen nicht, Timeout 5 s.

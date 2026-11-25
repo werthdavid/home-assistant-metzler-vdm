@@ -66,8 +66,18 @@ def test_seen_key_pruned_after_ttl_without_sighting():
     t.process([], now=0)
     t.process([R], now=2)
     t.process([], now=303)
-    # Only demonstrates pruning; in reality R is outside the 60 s window by then.
+    # Demonstrates pruning with a short TTL. In reality a record can come back
+    # after a long gap (repeated hour at the end of daylight saving time),
+    # which is why the default TTL is much longer than the 60 s window.
     assert t.process([R], now=304) != []
+
+
+def test_default_ttl_survives_repeated_hour():
+    t = UnlockTracker(ALLOW)
+    t.process([], now=0)
+    assert len(t.process([R], now=2)) == 1
+    t.process([], now=3702)
+    assert t.process([R], now=3702) == []
 
 
 def test_parse_allowlist():

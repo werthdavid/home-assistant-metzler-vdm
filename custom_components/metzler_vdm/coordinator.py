@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import logging
 import time
 from zoneinfo import ZoneInfo
@@ -77,11 +77,14 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
 
     async def _async_update_data(self) -> list[Unlock]:
         """Fetch records; fire nothing unless everything succeeded."""
-        now = datetime.now(self._tz)
+        # Absolute-time arithmetic in UTC, then formatted in the station time
+        # zone: wall-clock arithmetic in a DST zone would shift the window by
+        # an hour around the switch.
+        now = dt_util.utcnow()
         try:
             records = await self._client.async_search_valid_card_events(
-                now - timedelta(seconds=WINDOW_SECONDS),
-                now + timedelta(hours=END_AHEAD_HOURS),
+                (now - timedelta(seconds=WINDOW_SECONDS)).astimezone(self._tz),
+                (now + timedelta(hours=END_AHEAD_HOURS)).astimezone(self._tz),
             )
         except MetzlerCertificateError as err:
             ir.async_create_issue(

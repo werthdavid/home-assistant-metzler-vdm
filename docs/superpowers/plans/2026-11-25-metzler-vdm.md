@@ -18,7 +18,7 @@
 - `cardNo` und `name` verlassen `api.py` nie: nicht in Datenklassen, Logs, Attributen, Diagnose, Exceptions.
 - Passwort nie in Logs, Diagnose oder Fehlermeldungen. Exceptions enthalten keine Antwort-Rohdaten.
 - Bei jedem Fehler: kein Event, Erreichbarkeit "aus".
-- Konstanten (in `const.py`): `POLL_INTERVAL = 2`, `WINDOW_SECONDS = 60`, `END_AHEAD_HOURS = 24`, `PAGE_SIZE = 10`, `MAX_PAGES = 10`, `REQUEST_TIMEOUT = 5`, `SEEN_TTL = 300`, `DRIFT_THRESHOLD = 10`, `DRIFT_CHECK_INTERVAL = 3600`.
+- Konstanten (in `const.py`): `POLL_INTERVAL = 2`, `WINDOW_SECONDS = 60`, `END_AHEAD_HOURS = 24`, `PAGE_SIZE = 10`, `MAX_PAGES = 10`, `REQUEST_TIMEOUT = 5`, `SEEN_TTL = 7200`, `DRIFT_THRESHOLD = 10`, `DRIFT_CHECK_INTERVAL = 3600`.
 - Tests und Fixtures nur mit Platzhaltern (`"1001"`, `"PLACEHOLDER_CARD"`, `"PLACEHOLDER_NAME"`, Host `192.0.2.10`).
 - Testlauf: `.venv/bin/pytest -q` (venv mit Python 3.13).
 - Code, Bezeichner und Commit-Messages englisch; README und `translations/de.json` deutsch.
