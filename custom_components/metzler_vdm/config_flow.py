@@ -75,11 +75,15 @@ def _parse_doors(text: str) -> list[int] | None:
     return sorted(doors)
 
 
-def _access_schema(allowlist: str, timezone: str, doors: str) -> vol.Schema:
-    """Return the schema shared by the access step and the options flow."""
+def _access_schema(timezone: str) -> vol.Schema:
+    """Return the schema shared by the access step and the options flow.
+
+    Allowlist and doors only get suggested values (set by the caller), never
+    defaults: an omitted field must not fall back to a previously stored value.
+    """
     return vol.Schema(
         {
-            vol.Optional(CONF_ALLOWLIST, default=allowlist): TextSelector(
+            vol.Optional(CONF_ALLOWLIST): TextSelector(
                 TextSelectorConfig(multiline=True)
             ),
             vol.Required(CONF_TIMEZONE, default=timezone): SelectSelector(
@@ -88,7 +92,7 @@ def _access_schema(allowlist: str, timezone: str, doors: str) -> vol.Schema:
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Required(CONF_DOORS, default=doors): str,
+            vol.Optional(CONF_DOORS): str,
         }
     )
 
@@ -103,7 +107,7 @@ def _parse_access(
         allowlist = parse_allowlist(user_input.get(CONF_ALLOWLIST, ""))
     except AllowlistError:
         errors[CONF_ALLOWLIST] = "invalid_allowlist"
-    doors = _parse_doors(user_input[CONF_DOORS])
+    doors = _parse_doors(user_input.get(CONF_DOORS, ""))
     if doors is None:
         errors[CONF_DOORS] = "invalid_doors"
     if errors:
@@ -285,10 +289,14 @@ class MetzlerConfigFlow(ConfigFlow, domain=DOMAIN):
         defaults = user_input or {}
         return self.async_show_form(
             step_id="access",
-            data_schema=_access_schema(
-                defaults.get(CONF_ALLOWLIST, ""),
-                defaults.get(CONF_TIMEZONE, self.hass.config.time_zone),
-                defaults.get(CONF_DOORS, "1"),
+            data_schema=self.add_suggested_values_to_schema(
+                _access_schema(
+                    defaults.get(CONF_TIMEZONE, self.hass.config.time_zone)
+                ),
+                {
+                    CONF_ALLOWLIST: defaults.get(CONF_ALLOWLIST, ""),
+                    CONF_DOORS: defaults.get(CONF_DOORS, "1"),
+                },
             ),
             errors=errors,
         )
@@ -350,8 +358,12 @@ class MetzlerOptionsFlow(OptionsFlow):
         }
         return self.async_show_form(
             step_id="init",
-            data_schema=_access_schema(
-                current[CONF_ALLOWLIST], current[CONF_TIMEZONE], current[CONF_DOORS]
+            data_schema=self.add_suggested_values_to_schema(
+                _access_schema(current[CONF_TIMEZONE]),
+                {
+                    CONF_ALLOWLIST: current.get(CONF_ALLOWLIST, ""),
+                    CONF_DOORS: current.get(CONF_DOORS, ""),
+                },
             ),
             errors=errors,
         )

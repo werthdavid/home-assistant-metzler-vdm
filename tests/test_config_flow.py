@@ -11,6 +11,7 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 import pytest
+import voluptuous as vol
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -268,15 +269,40 @@ async def test_options_flow_updates_allowlist_and_reloads(
 async def test_options_flow_is_prefilled_and_validates(hass, config_entry, mock_client):
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
     keys = {str(k): k for k in result["data_schema"].schema}
-    assert keys[CONF_ALLOWLIST].default() == "1001=Alias A"
+    assert keys[CONF_ALLOWLIST].description == {"suggested_value": "1001=Alias A"}
     assert keys[CONF_TIMEZONE].default() == "Europe/Berlin"
-    assert keys[CONF_DOORS].default() == "1"
+    assert keys[CONF_DOORS].description == {"suggested_value": "1"}
+    # Stored values are suggestions only, never defaults.
+    assert keys[CONF_ALLOWLIST].default is vol.UNDEFINED
+    assert keys[CONF_DOORS].default is vol.UNDEFINED
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], {**ACCESS_INPUT, CONF_DOORS: "x"}
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {CONF_DOORS: "invalid_doors"}
+
+
+async def test_options_flow_omitted_allowlist_empties_it(
+    hass, config_entry, mock_client
+):
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_TIMEZONE: "Europe/Berlin", CONF_DOORS: "1"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert config_entry.options[CONF_ALLOWLIST] == {}
+
+
+async def test_options_flow_omitted_doors_is_invalid(hass, config_entry, mock_client):
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_ALLOWLIST: "1001=Alias A", CONF_TIMEZONE: "Europe/Berlin"},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {CONF_DOORS: "invalid_doors"}
+    assert config_entry.options[CONF_DOORS] == [1]
 
 
 async def test_reauth_updates_password(hass, config_entry, mock_client, flow_client):
