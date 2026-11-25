@@ -131,6 +131,7 @@ class MetzlerClient:
                 f"{self._base}{path}",
                 ssl=self._ssl,
                 timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
+                allow_redirects=False,
                 **kwargs,
             ) as response:
                 status = response.status
@@ -141,6 +142,7 @@ class MetzlerClient:
                 if status >= 500:
                     raise MetzlerConnectionError(f"Device error (HTTP {status})")
                 if status != 200:
+                    # Includes 3xx: redirects are never followed.
                     raise MetzlerResponseError(f"Unexpected status (HTTP {status})")
                 try:
                     return await response.text()

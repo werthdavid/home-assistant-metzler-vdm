@@ -308,3 +308,18 @@ async def test_unexpected_status_logged_sanitised(fake_session, client, caplog):
     with pytest.raises(MetzlerResponseError):
         await client.async_search_valid_card_events(START, END)
     assert "PLACEHOLDER" not in caplog.text
+
+
+async def test_redirects_are_not_followed(fake_session, client):
+    fake_session.add(NO_MATCH)
+    await client.async_search_valid_card_events(START, END)
+    fake_session.add("<Time><localTime>2026-11-25T08:57:25+01:00</localTime></Time>")
+    await client.async_get_device_time(UTC)
+    assert [c.kwargs.get("allow_redirects") for c in fake_session.calls] == [
+        False,
+        False,
+    ]
+    for status in (301, 302, 307, 308):
+        fake_session.add("", status)
+        with pytest.raises(MetzlerResponseError):
+            await client.async_search_valid_card_events(START, END)
