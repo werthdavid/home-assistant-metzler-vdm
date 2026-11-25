@@ -12,12 +12,15 @@ für eine Automation, kein Ersatz für die Zutrittskontrolle der Station.
 
 - Ausgewertet werden ausschließlich Ereignisse "gültige Karte" (ISAPI Major 5,
   Minor 1) für die konfigurierten Türen.
-- Nur Karten-IDs auf der Positivliste (Allowlist) lösen ein Ereignis aus.
+- Nur Personen-IDs auf der Positivliste (Allowlist) lösen ein Ereignis aus.
+  Gemeint ist die Personen-ID (Mitarbeiternummer, `employeeNoString`) aus der
+  Web-Oberfläche der Station, nicht die Kartennummer.
 - Kartennummer und Name aus der Station werden weder gespeichert noch
   protokolliert, angezeigt oder in Diagnosedaten ausgegeben. Verwendet wird
   nur die Mitarbeiter-ID (`employeeNoString`).
 - Es wird nur abgefragt (Polling alle 2 s über ein 60-s-Fenster). Es gibt
-  keinen Push und kein Nachholen älterer Ereignisse (siehe "Bekannte Grenzen").
+  keinen Push und kein Nachholen von Ereignissen, die älter als 60 s sind
+  (siehe "Bekannte Grenzen").
 
 ## Voraussetzungen
 
@@ -57,13 +60,18 @@ Assistant. Sie erscheinen nicht in Logs oder Diagnosedaten.
 
 - Ein Eintrag pro Zeile im Format `ID=Alias`, z. B. `1001=Alias A`. Eine Zeile
   nur mit `ID` verwendet die ID als Alias.
+- `ID` ist die Personen-ID (Mitarbeiternummer), die die Web-Oberfläche der
+  Station bei der Person anzeigt (im ISAPI-Ereignis `employeeNoString`). Die
+  Kartennummer ist nicht gemeint und wird nie ausgewertet.
 - IDs werden als exakte Zeichenketten verglichen (`1001` und `01001` sind
   verschiedene IDs). Doppelte IDs werden abgelehnt.
 - Eine leere Positivliste bedeutet: es wird nichts ausgelöst.
 - Änderbar unter "Konfigurieren" der Integration (Optionen). Eine
-  Änderung lädt die Integration neu. Der erste Abruf nach dem Neuladen
-  bereitet nur den Zustand vor und löst nichts aus: eine Entriegelung in
-  diesen etwa 2 Sekunden kann verpasst werden.
+  Änderung lädt die Integration neu. Der erste erfolgreiche Abruf nach Start,
+  Neuladen oder Änderung der Optionen bereitet nur den Zustand vor und löst
+  nichts aus. Jede Entriegelung, die er liefert, also jede aus den 60 s vor
+  diesem Abruf einschließlich der Dauer des Neuladens, wird nicht gemeldet,
+  sofern sie nicht schon vorher gemeldet wurde.
 
 ### Neu konfigurieren und Neuanmeldung
 
@@ -74,12 +82,13 @@ Assistant. Sie erscheinen nicht in Logs oder Diagnosedaten.
 
 ## Entitäten
 
-Pro Tür und für die Station je Entität (die Entitäts-IDs hängen von der
-Sprache ab und sind unten nur Beispiele):
+Je Tür eine Ereignis-Entität, dazu eine Erreichbarkeits-Entität für die
+Station (die Entitäts-IDs hängen von der Sprache ab und sind unten nur
+Beispiele):
 
 | Entität | Beschreibung |
 | --- | --- |
-| Ereignis "Gültige Entriegelung Tür N" (`event`, englisch "Valid unlock door N") | Löst bei gültiger Entriegelung einer Karte der Positivliste an Tür N aus. Ereignistyp `valid_unlock`. |
+| Ereignis "Gültige Entriegelung Tür N" (`event`, englisch "Valid unlock door N") | Löst bei gültiger Entriegelung einer ID der Positivliste an Tür N aus. Ereignistyp `valid_unlock`. |
 | "Erreichbarkeit" (`binary_sensor`, Diagnose, englisch "Connectivity") | An, solange der letzte Abruf erfolgreich war. Aus bei Ausfall, Zertifikatsabweichung oder abgelehntem Passwort. Nie `unavailable`. |
 
 Attribute des Ereignisses: `employee_no`, `alias`, `door`, `time` (Zeit wie von
@@ -111,40 +120,44 @@ einfacher Zustands-Trigger hielte das für eine neue Entriegelung und würde den
 Alarm entschärfen. Das Bus-Ereignis kann durch Wiederherstellen nicht
 entstehen.
 
+Der Block ist ein Eintrag für `automations.yaml` (ohne Schlüssel
+`automation:`); im YAML-Editor der Oberfläche ohne das führende `- ` einfügen.
+
 ```yaml
-automation:
-  - alias: "Alarm entschärfen bei gültiger Karte"
-    triggers:
-      - trigger: event
-        event_type: metzler_vdm_valid_unlock
-        event_data:
-          door: 1
-    conditions:
-      # Pflicht: nur das lokal und ohne Benutzerkontext ausgelöste Ereignis
-      # der Integration zulassen (siehe Sicherheitshinweise).
-      - condition: template
-        value_template: "{{ trigger.event.context.user_id is none and (trigger.event.origin | string) == 'LOCAL' }}"
-      - condition: state
-        entity_id: binary_sensor.metzler_vdm_erreichbarkeit   # Platzhalter, eigenen Entitätsnamen eintragen
-        state: "on"
-      # Optional: nur bestimmte IDs zulassen
-      # - condition: template
-      #   value_template: "{{ trigger.event.data.employee_no in ['1001'] }}"
-      # Empfohlen: zweites Signal, z. B. Anwesenheit des Handys
-      # - condition: state
-      #   entity_id: person.beispiel
-      #   state: "home"
-    actions:
-      - action: alarm_control_panel.alarm_disarm
-        target:
-          entity_id: alarm_control_panel.beispiel
-        data:
-          code: !secret alarm_code
+- alias: "Alarm entschärfen bei gültiger Karte"
+  triggers:
+    - trigger: event
+      event_type: metzler_vdm_valid_unlock
+      event_data:
+        door: 1
+  conditions:
+    # Pflicht: nur das lokal und ohne Benutzerkontext ausgelöste Ereignis
+    # der Integration zulassen (siehe Sicherheitshinweise).
+    - condition: template
+      value_template: "{{ trigger.event.context.user_id is none and (trigger.event.origin | string) == 'LOCAL' }}"
+    - condition: state
+      entity_id: binary_sensor.metzler_vdm_erreichbarkeit   # Platzhalter, eigenen Entitätsnamen eintragen
+      state: "on"
+    # Optional: nur bestimmte IDs zulassen
+    # - condition: template
+    #   value_template: "{{ trigger.event.data.employee_no in ['1001'] }}"
+    # Empfohlen: zweites Signal, z. B. Anwesenheit des Handys
+    # - condition: state
+    #   entity_id: person.beispiel
+    #   state: "home"
+  actions:
+    - action: alarm_control_panel.alarm_disarm
+      target:
+        entity_id: alarm_control_panel.beispiel
+      data:
+        code: !secret alarm_code
 ```
 
 **Warnung:** Wer stattdessen auf den Zustand der Ereignis-Entität triggert,
 muss `not_from: ["unavailable", "unknown"]` setzen, sonst kann ein Neustart
-oder Neuladen wie eine Entriegelung wirken.
+oder Neuladen wie eine Entriegelung wirken. Dieser Filter verschluckt aber
+auch die allererste Entriegelung nach dem Anlegen der Entität (Wechsel von
+`unknown`), ein weiterer Grund, das Bus-Ereignis zu verwenden.
 
 ## Sicherheitshinweise
 
@@ -163,8 +176,9 @@ oder Neuladen wie eine Entriegelung wirken.
   Bei Abweichung wird keine Anfrage mit Zugangsdaten gesendet, die
   Konnektivität geht aus und die Reparaturmeldung erscheint.
 - Diagnosedaten enthalten Host, Benutzer, Passwort, Fingerabdruck und
-  Positivliste nicht (geschwärzt). Sie zeigen nur Status, Uhrabweichung und die
-  Größe der Positivliste.
+  Positivliste nicht (geschwärzt). Sie zeigen nur den Status des letzten
+  Abrufs, die Uhrabweichung, die Größe der Positivliste, die Zeitzone der
+  Station, die Türen und ob der Merkspeicher nach dem Start vorbereitet ist.
 
 ## Datenschutz (DSGVO)
 
@@ -177,8 +191,10 @@ Zeitpunkt der Entriegelung. Empfehlung:
 - Es gibt zwei Spuren: die Zustände/Attribute der Ereignis-Entität und das
   Bus-Ereignis `metzler_vdm_valid_unlock` (Daten: `employee_no`, `alias`,
   `door`, `time`). Der Recorder schreibt Bus-Ereignisse standardmäßig in seine
-  Ereignistabelle. Ein Ausschluss nur der Entität ist deshalb nicht
-  verlässlich. Beides ausschließen, wenn kein Protokoll gewünscht ist:
+  Ereignistabelle. Ist die Entität ausgeschlossen, verwirft er das
+  Bus-Ereignis zwar bereits, weil es deren `entity_id` trägt. Robuster ist es,
+  zusätzlich den Ereignistyp auszuschließen. Beides ausschließen, wenn kein
+  Protokoll gewünscht ist:
 
   ```yaml
   recorder:
@@ -189,8 +205,8 @@ Zeitpunkt der Entriegelung. Empfehlung:
         - metzler_vdm_valid_unlock
   ```
 
-  Entitätsnamen sind Platzhalter, eigene eintragen. Auch dann sieht das Logbuch
-  die Entriegelungen nicht mehr, Automationen sind nicht betroffen.
+  Entitätsnamen sind Platzhalter, eigene eintragen. Danach zeigt das Logbuch
+  die Entriegelungen nicht mehr an. Automationen sind nicht betroffen.
 - Nur Aliase verwenden, die keine Rückschlüsse über das nötige Maß hinaus
   erlauben.
 - Beachten, wer Zugriff auf Logbuch und Verlauf hat.
@@ -203,9 +219,11 @@ gespeichert oder angezeigt.
 - Polling alle 2 s über ein 60-s-Fenster. Zeitauflösung der Station ist eine
   Sekunde. Mehrere Entriegelungen derselben ID an derselben Tür in derselben
   Sekunde werden als eine gezählt.
-- Kein Nachholen: nach einem Ausfall der Station oder von Home Assistant werden
-  Ereignisse außerhalb des 60-s-Fensters nicht mehr gemeldet. Der erste Abruf
-  nach dem Start oder Neuladen löst nichts aus.
+- Kein Nachholen: nach einem Ausfall der Station meldet der erste
+  erfolgreiche Abruf Entriegelungen, die höchstens 60 s alt sind, verspätet.
+  Ältere werden nie gemeldet. Nach einem Start oder Neuladen von Home
+  Assistant meldet der erste erfolgreiche Abruf nichts, er bereitet nur den
+  Zustand vor (siehe "Positivliste").
 - Nur Ereignisse "gültige Karte" (Major 5, Minor 1). Fingerabdruck, Gesicht,
   Code oder abgelehnte Karten werden nicht ausgewertet.
 - Nur IPv4-Adressen oder Hostnamen, ohne Port.

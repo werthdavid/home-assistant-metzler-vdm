@@ -27,3 +27,19 @@ def test_certificate_issue_points_to_reconfigure():
     assert "Web-Oberfläche" in de
     assert "Angriff" in de
     assert "entferne" not in de.lower()
+
+
+def test_allowlist_texts_name_the_person_id_not_the_card():
+    for name, marker, card in (
+        ("strings.json", "employee", "card number"),
+        ("translations/de.json", "Personen", "Kartennummer"),
+    ):
+        data = load(name)
+        for step in (
+            data["config"]["step"]["access"],
+            data["options"]["step"]["init"],
+        ):
+            text = step["description"] + step["data_description"]["allowlist"]
+            assert marker in text, name
+            assert card in text, name  # explicitly "not the card number"
+            assert "card ID" not in text and "Karten-ID" not in text, name

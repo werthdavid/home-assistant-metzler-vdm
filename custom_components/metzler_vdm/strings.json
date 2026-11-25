@@ -34,14 +34,14 @@
       },
       "access": {
         "title": "Access rules",
-        "description": "Which card IDs may trigger an unlock event, and for which doors.",
+        "description": "Which person IDs may trigger an unlock event, and for which doors. Use the person (employee) ID shown in the web UI of the door station, not the card number.",
         "data": {
           "allowlist": "Allowlist",
           "timezone": "Time zone of the door station",
           "doors": "Doors"
         },
         "data_description": {
-          "allowlist": "One entry per line as ID=Alias. Only listed IDs fire events. An empty list means nothing fires.",
+          "allowlist": "One entry per line as ID=Alias, where ID is the person (employee) ID from the web UI of the door station, not the card number. Only listed IDs fire events. An empty list means nothing fires.",
           "timezone": "Time zone the door station uses for its event times.",
           "doors": "Comma-separated door numbers, e.g. 1 or 1,2."
         }
@@ -74,14 +74,14 @@
     "step": {
       "init": {
         "title": "Access rules",
-        "description": "Which card IDs may trigger an unlock event, and for which doors.",
+        "description": "Which person IDs may trigger an unlock event, and for which doors. Use the person (employee) ID shown in the web UI of the door station, not the card number.",
         "data": {
           "allowlist": "Allowlist",
           "timezone": "Time zone of the door station",
           "doors": "Doors"
         },
         "data_description": {
-          "allowlist": "One entry per line as ID=Alias. Only listed IDs fire events. An empty list means nothing fires.",
+          "allowlist": "One entry per line as ID=Alias, where ID is the person (employee) ID from the web UI of the door station, not the card number. Only listed IDs fire events. An empty list means nothing fires.",
           "timezone": "Time zone the door station uses for its event times.",
           "doors": "Comma-separated door numbers, e.g. 1 or 1,2."
         }

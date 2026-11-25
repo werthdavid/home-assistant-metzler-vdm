@@ -34,14 +34,14 @@
       },
       "access": {
         "title": "Zugriffsregeln",
-        "description": "Welche Karten-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen.",
+        "description": "Welche Personen-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen. Gemeint ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer.",
         "data": {
           "allowlist": "Positivliste",
           "timezone": "Zeitzone der Türstation",
           "doors": "Türen"
         },
         "data_description": {
-          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
+          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. ID ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
           "timezone": "Zeitzone, in der die Türstation ihre Ereigniszeiten angibt.",
           "doors": "Kommagetrennte Türnummern, z. B. 1 oder 1,2."
         }
@@ -74,14 +74,14 @@
     "step": {
       "init": {
         "title": "Zugriffsregeln",
-        "description": "Welche Karten-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen.",
+        "description": "Welche Personen-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen. Gemeint ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer.",
         "data": {
           "allowlist": "Positivliste",
           "timezone": "Zeitzone der Türstation",
           "doors": "Türen"
         },
         "data_description": {
-          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
+          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. ID ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
           "timezone": "Zeitzone, in der die Türstation ihre Ereigniszeiten angibt.",
           "doors": "Kommagetrennte Türnummern, z. B. 1 oder 1,2."
         }
