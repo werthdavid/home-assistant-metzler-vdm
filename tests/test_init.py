@@ -363,3 +363,14 @@ async def test_clock_query_unexpected_error_does_not_lose_unlock(
     assert mock_client.async_get_device_time.await_count == 2
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_ON
     assert len(bus) == 1
+
+
+async def test_unload_closes_session(hass, config_entry, mock_client):
+    from custom_components.metzler_vdm import MetzlerClient
+
+    await setup(hass, config_entry)
+    session = MetzlerClient.call_args.args[0]
+    assert not session.closed
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert session.closed

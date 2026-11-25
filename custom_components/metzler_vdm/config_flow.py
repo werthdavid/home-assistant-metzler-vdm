@@ -123,7 +123,7 @@ async def _async_probe(
     hass: HomeAssistant, host: str, username: str, password: str, fingerprint: bytes
 ) -> str | None:
     """Query recent events through the pinned client; return an error key."""
-    session = create_digest_session(hass, username, password)
+    session = create_digest_session(hass, username, password, auto_cleanup=False)
     try:
         client = MetzlerClient(session, host, fingerprint)
         now = dt_util.utcnow()
@@ -139,7 +139,8 @@ async def _async_probe(
     except MetzlerError:
         return "unexpected_response"
     finally:
-        await session.close()
+        # close() of a Home Assistant session is only a warning; detach.
+        session.detach()
     return None
 
 

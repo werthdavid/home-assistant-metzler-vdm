@@ -20,6 +20,8 @@ PLATFORMS = [Platform.EVENT, Platform.BINARY_SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: MetzlerConfigEntry) -> bool:
     """Set up Metzler VDM from a config entry."""
+    # Created during setup with auto cleanup: Home Assistant detaches the
+    # session when this entry unloads (and on shutdown).
     session = create_digest_session(
         hass, entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
     )

@@ -75,11 +75,17 @@ def format_fingerprint(raw: bytes) -> str:
 
 
 def create_digest_session(
-    hass: HomeAssistant, username: str, password: str
+    hass: HomeAssistant, username: str, password: str, *, auto_cleanup: bool = True
 ) -> aiohttp.ClientSession:
-    """Create a client session that authenticates with HTTP digest."""
+    """Create a client session that authenticates with HTTP digest.
+
+    The session shares Home Assistant's connector, so it is released with
+    detach(), never close(). With auto_cleanup (in entry setup) Home Assistant
+    detaches it on unload and on shutdown; without it the caller must detach.
+    """
     return async_create_clientsession(
         hass,
+        auto_cleanup=auto_cleanup,
         middlewares=(aiohttp.DigestAuthMiddleware(username, password),),
     )
 

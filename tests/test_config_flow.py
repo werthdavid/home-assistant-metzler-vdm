@@ -390,3 +390,24 @@ async def test_auth_error_starts_reauth(hass, config_entry, mock_client, freezer
         and flow["context"]["entry_id"] == config_entry.entry_id
         for flow in flows
     )
+
+
+async def test_probe_session_registers_no_cleanup_listener(
+    hass, fetch_fingerprint, flow_client, mock_setup_entry, caplog
+):
+    from homeassistant.const import EVENT_HOMEASSISTANT_CLOSE
+
+    def close_listeners() -> int:
+        return hass.bus.async_listeners().get(EVENT_HOMEASSISTANT_CLOSE, 0)
+
+    # First probe warms up shared helpers (connector) that listen once.
+    result = await to_fingerprint_step(hass)
+    await hass.config_entries.flow.async_configure(result["flow_id"], {"confirm": True})
+    assert flow_client.call_args.args[0].closed
+    before = close_listeners()
+
+    result = await to_fingerprint_step(hass, {**USER_INPUT, CONF_HOST: "192.0.2.11"})
+    await hass.config_entries.flow.async_configure(result["flow_id"], {"confirm": True})
+    assert flow_client.call_args.args[0].closed
+    assert close_listeners() == before
+    assert "closes the Home Assistant aiohttp session" not in caplog.text
