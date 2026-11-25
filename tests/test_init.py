@@ -11,7 +11,10 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 import pytest
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from pytest_homeassistant_custom_component.common import (
+    async_capture_events,
+    async_fire_time_changed,
+)
 
 from custom_components.metzler_vdm.api import (
     MetzlerAuthError,
@@ -19,7 +22,7 @@ from custom_components.metzler_vdm.api import (
     MetzlerConnectionError,
     MetzlerNotSupportedError,
 )
-from custom_components.metzler_vdm.const import DOMAIN
+from custom_components.metzler_vdm.const import DOMAIN, EVENT_VALID_UNLOCK
 from custom_components.metzler_vdm.tracker import AcsRecord
 
 R = AcsRecord("2026-11-25 08:57:25", "1001", 1)
@@ -113,28 +116,31 @@ async def test_allowed_unlock_fires_exactly_once(
 
 async def test_unlisted_id_fires_nothing(hass, config_entry, mock_client, freezer):
     await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
     mock_client.async_search_valid_card_events.return_value = [
         AcsRecord("2026-11-25 08:57:25", "9999", 1)
     ]
     await poll(hass, freezer, 3)
     assert hass.states.get(event_id(hass, config_entry)).state == STATE_UNKNOWN
-
+    assert bus == []
 
 async def test_unconfigured_door_fires_nothing(
     hass, config_entry, mock_client, freezer
 ):
     await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
     mock_client.async_search_valid_card_events.return_value = [
         AcsRecord("2026-11-25 08:57:25", "1001", 2)
     ]
     await poll(hass, freezer, 3)
     assert hass.states.get(event_id(hass, config_entry)).state == STATE_UNKNOWN
-
+    assert bus == []
 
 async def test_error_sets_connectivity_off_and_recovers(
     hass, config_entry, mock_client, freezer
 ):
     await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
     ent_id = event_id(hass, config_entry)
     mock_client.async_search_valid_card_events.side_effect = MetzlerConnectionError(
         "down"
@@ -143,26 +149,29 @@ async def test_error_sets_connectivity_off_and_recovers(
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_OFF
     assert_no_event(hass, ent_id)
 
+    assert bus == []
     changes = track_events(hass, ent_id)
     mock_client.async_search_valid_card_events.side_effect = None
     mock_client.async_search_valid_card_events.return_value = [R_NEW]
     await poll(hass, freezer, 3)
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_ON
     assert len(changes) == 1
-
+    assert len(bus) == 1
 
 async def test_unexpected_exception_fires_nothing(
     hass, config_entry, mock_client, freezer
 ):
     await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
     mock_client.async_search_valid_card_events.side_effect = RuntimeError("boom")
     await poll(hass, freezer, 2)
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_OFF
     assert_no_event(hass, event_id(hass, config_entry))
-
+    assert bus == []
 
 async def test_certificate_mismatch(hass, config_entry, mock_client, freezer):
     await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
     mock_client.async_search_valid_card_events.side_effect = MetzlerCertificateError(
         "mismatch"
     )
@@ -178,19 +187,20 @@ async def test_certificate_mismatch(hass, config_entry, mock_client, freezer):
     mock_client.async_search_valid_card_events.side_effect = None
     await poll(hass, freezer)
     assert registry.async_get_issue(DOMAIN, f"certificate_mismatch_{config_entry.entry_id}") is None
-
+    assert bus == []
 
 async def test_auth_error_sets_connectivity_off(
     hass, config_entry, mock_client, freezer
 ):
     await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
     mock_client.async_search_valid_card_events.side_effect = MetzlerAuthError("bad")
     with patch.object(ConfigEntry, "async_start_reauth") as start_reauth:
         await poll(hass, freezer)
     start_reauth.assert_called_once()
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_OFF
     assert_no_event(hass, event_id(hass, config_entry))
-
+    assert bus == []
 
 async def test_setup_with_station_offline_still_loads(
     hass, config_entry, mock_client, freezer
@@ -260,6 +270,7 @@ async def test_outage_causes_no_event_state_change(
     hass, config_entry, mock_client, freezer
 ):
     await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
     ent_id = event_id(hass, config_entry)
     changes: list[Event] = []
 
@@ -276,7 +287,7 @@ async def test_outage_causes_no_event_state_change(
     await poll(hass, freezer, 3)
     assert changes == []
     assert hass.states.get(ent_id).state == STATE_UNKNOWN
-
+    assert bus == []
 
 async def test_recovery_without_new_unlock_causes_no_state_change(
     hass, config_entry, mock_client, freezer
@@ -303,3 +314,52 @@ async def test_recovery_without_new_unlock_causes_no_state_change(
     await poll(hass, freezer, 3)
     assert changes == []
     assert hass.states.get(ent_id).state == fired
+
+
+async def test_bus_event_fired_once_per_unlock(
+    hass, config_entry, mock_client, freezer
+):
+    await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
+    mock_client.async_search_valid_card_events.return_value = [R]
+    await poll(hass, freezer, 3)
+    assert len(bus) == 1
+    assert bus[0].data == {
+        "entry_id": config_entry.entry_id,
+        "entity_id": event_id(hass, config_entry),
+        "employee_no": "1001",
+        "alias": "Alias A",
+        "door": 1,
+        "time": "2026-11-25 08:57:25",
+    }
+
+
+async def test_reload_fires_no_bus_event(hass, config_entry, mock_client, freezer):
+    await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
+    mock_client.async_search_valid_card_events.return_value = [R]
+    await poll(hass, freezer, 2)
+    assert len(bus) == 1
+    before = hass.states.get(event_id(hass, config_entry)).state
+
+    await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    await poll(hass, freezer, 3)
+    assert len(bus) == 1
+    # HA restores the last event state on re-add (README warns about this).
+    assert hass.states.get(event_id(hass, config_entry)).state == before
+
+
+async def test_clock_query_unexpected_error_does_not_lose_unlock(
+    hass, config_entry, mock_client, freezer
+):
+    await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
+    mock_client.async_get_device_time.side_effect = RuntimeError("boom")
+    mock_client.async_search_valid_card_events.return_value = [R]
+    freezer.tick(timedelta(seconds=3600))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert mock_client.async_get_device_time.await_count == 2
+    assert hass.states.get(conn_id(hass, config_entry)).state == STATE_ON
+    assert len(bus) == 1

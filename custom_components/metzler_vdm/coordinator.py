@@ -116,8 +116,8 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
             self.clock_drift = None
             ir.async_delete_issue(self.hass, DOMAIN, self.issue_id(ISSUE_CLOCK_DRIFT))
             return
-        except MetzlerError as err:
-            _LOGGER.debug("Device time query failed: %s", err)
+        except Exception as err:  # noqa: BLE001 - must never fail the poll
+            _LOGGER.debug("Device time query failed (%s)", type(err).__name__)
             return
 
         self._next_drift_check = monotonic + DRIFT_CHECK_INTERVAL

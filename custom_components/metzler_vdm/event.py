@@ -6,7 +6,7 @@ from homeassistant.components.event import EventEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_DOORS
+from .const import CONF_DOORS, EVENT_VALID_UNLOCK as BUS_EVENT_VALID_UNLOCK
 from .coordinator import MetzlerConfigEntry, MetzlerCoordinator
 from .entity import MetzlerEntity
 
@@ -52,13 +52,20 @@ class ValidUnlockEvent(MetzlerEntity, EventEntity):
             for unlock in self.coordinator.data or []:
                 if unlock.door_no != self._door:
                     continue
-                self._trigger_event(
-                    EVENT_VALID_UNLOCK,
+                payload = {
+                    "employee_no": unlock.employee_no,
+                    "alias": unlock.alias,
+                    "door": unlock.door_no,
+                    "time": unlock.time,
+                }
+                self._trigger_event(EVENT_VALID_UNLOCK, payload)
+                # Restore-proof signal: entity state is restored on reload.
+                self.hass.bus.async_fire(
+                    BUS_EVENT_VALID_UNLOCK,
                     {
-                        "employee_no": unlock.employee_no,
-                        "alias": unlock.alias,
-                        "door": unlock.door_no,
-                        "time": unlock.time,
+                        "entry_id": self.coordinator.config_entry.entry_id,
+                        "entity_id": self.entity_id,
+                        **payload,
                     },
                 )
         super()._handle_coordinator_update()

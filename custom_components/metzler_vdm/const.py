@@ -19,3 +19,5 @@ CONF_FINGERPRINT = "fingerprint"
 CONF_ALLOWLIST = "allowlist"
 CONF_TIMEZONE = "timezone"
 CONF_DOORS = "doors"
+
+EVENT_VALID_UNLOCK = "metzler_vdm_valid_unlock"
