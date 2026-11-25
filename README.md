@@ -15,7 +15,7 @@ für eine Automation, kein Ersatz für die Zutrittskontrolle der Station.
 - Nur Karten-IDs auf der Positivliste (Allowlist) lösen ein Ereignis aus.
 - Kartennummer und Name aus der Station werden weder gespeichert noch
   protokolliert, angezeigt oder in Diagnosedaten ausgegeben. Verwendet wird
-  nur die Mitarbeiter-ID (`employeeNo`).
+  nur die Mitarbeiter-ID (`employeeNoString`).
 - Es wird nur abgefragt (Polling alle 2 s über ein 60-s-Fenster). Es gibt
   keinen Push und kein Nachholen älterer Ereignisse (siehe "Bekannte Grenzen").
 
@@ -79,8 +79,8 @@ Sprache ab und sind unten nur Beispiele):
 
 | Entität | Beschreibung |
 | --- | --- |
-| Ereignis "Valid unlock door N" (`event`) | Löst bei gültiger Entriegelung einer Karte der Positivliste an Tür N aus. Ereignistyp `valid_unlock`. |
-| "Connectivity" (`binary_sensor`, Diagnose) | An, solange der letzte Abruf erfolgreich war. Aus bei Ausfall, Zertifikatsabweichung oder abgelehntem Passwort. Nie `unavailable`. |
+| Ereignis "Gültige Entriegelung Tür N" (`event`, englisch "Valid unlock door N") | Löst bei gültiger Entriegelung einer Karte der Positivliste an Tür N aus. Ereignistyp `valid_unlock`. |
+| "Erreichbarkeit" (`binary_sensor`, Diagnose, englisch "Connectivity") | An, solange der letzte Abruf erfolgreich war. Aus bei Ausfall, Zertifikatsabweichung oder abgelehntem Passwort. Nie `unavailable`. |
 
 Attribute des Ereignisses: `employee_no`, `alias`, `door`, `time` (Zeit wie von
 der Station gemeldet, Sekundenauflösung).
