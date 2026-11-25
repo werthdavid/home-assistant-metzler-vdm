@@ -1,0 +1,12 @@
+{
+  "domain": "metzler_vdm",
+  "name": "Metzler VDM",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://example.com/metzler_vdm",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://example.com/metzler_vdm/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
