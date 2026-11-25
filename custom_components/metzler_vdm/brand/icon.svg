@@ -1,17 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-  <!-- door station panel -->
+  <!-- door station panel with camera -->
   <rect x="64" y="12" width="128" height="232" rx="26" fill="#2b3440"/>
   <rect x="72" y="20" width="112" height="216" rx="19" fill="#3a4654"/>
-  <!-- camera -->
-  <circle cx="128" cy="66" r="27" fill="#1b222b"/>
-  <circle cx="128" cy="66" r="14" fill="#18bcf2"/>
-  <circle cx="122" cy="60" r="4.5" fill="#ffffff" opacity="0.85"/>
-  <!-- RFID reader field -->
-  <path d="M 112 162 A 22 22 0 0 1 144 162" fill="none" stroke="#e8eef4" stroke-width="10" stroke-linecap="round"/>
-  <path d="M 97 146 A 44 44 0 0 1 159 146" fill="none" stroke="#e8eef4" stroke-width="10" stroke-linecap="round"/>
-  <circle cx="128" cy="180" r="8" fill="#e8eef4"/>
+  <circle cx="128" cy="62" r="27" fill="#1b222b"/>
+  <circle cx="128" cy="62" r="14" fill="#18bcf2"/>
+  <circle cx="122" cy="56" r="4.5" fill="#ffffff" opacity="0.85"/>
+  <!-- RFID card in front of the station -->
+  <g transform="translate(120 168) rotate(25)">
+    <rect x="-68.0" y="-45.0" width="136" height="90" rx="16" fill="#2b3440"/>
+    <rect x="-62.0" y="-39.0" width="124" height="78" rx="10" fill="#e8eef4"/>
+    <path d="M -31.9 23.3 A 14 14 0 0 1 -19.7 11.1" fill="none" stroke="#3a4654" stroke-width="8" stroke-linecap="round"/>
+    <path d="M -43.8 21.8 A 26 26 0 0 1 -21.2 -0.8" fill="none" stroke="#3a4654" stroke-width="8" stroke-linecap="round"/>
+    <path d="M -55.7 20.4 A 38 38 0 0 1 -22.6 -12.7" fill="none" stroke="#3a4654" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="-18" cy="25" r="6" fill="#3a4654"/>
+  </g>
   <!-- valid badge -->
-  <circle cx="190" cy="196" r="46" fill="#ffffff"/>
-  <circle cx="190" cy="196" r="38" fill="#2eb872"/>
-  <polyline points="171,197 184,210 209,183" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="204" cy="52" r="44" fill="#ffffff"/>
+  <circle cx="204" cy="52" r="36" fill="#2eb872"/>
+  <polyline points="186,53 198,65 222,40" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
