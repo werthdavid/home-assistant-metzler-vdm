@@ -95,3 +95,48 @@ def test_ids_are_compared_as_exact_strings():
     t.process([], now=0)
     assert t.process([AcsRecord("2026-11-25 08:57:25", "101", 1)], now=1) == []
     assert len(t.process([AcsRecord("2026-11-25 08:57:25", "0101", 1)], now=2)) == 1
+
+
+def test_allow_all_fires_unlisted_id_with_id_as_alias():
+    t = UnlockTracker({}, allow_all=True)
+    t.process([], now=0)
+    unlisted = AcsRecord("2026-11-25 08:57:25", "9999", 1)
+    assert t.process([unlisted], now=2) == [
+        Unlock("9999", "9999", 1, "2026-11-25 08:57:25")
+    ]
+    assert t.process([unlisted], now=4) == []
+
+
+def test_allow_all_keeps_alias_of_listed_id():
+    t = UnlockTracker(ALLOW, allow_all=True)
+    t.process([], now=0)
+    assert t.process([R], now=2) == [
+        Unlock("1001", "Alias A", 1, "2026-11-25 08:57:25")
+    ]
+
+
+def test_allow_all_first_poll_still_only_primes():
+    t = UnlockTracker({}, allow_all=True)
+    assert t.process([R], now=0) == []
+    assert t.process([R], now=2) == []
+
+
+def test_allow_all_fires_record_without_id():
+    t = UnlockTracker({}, allow_all=True)
+    t.process([], now=0)
+    anonymous = AcsRecord("2026-11-25 08:57:25", "", 1)
+    assert t.process([anonymous], now=2) == [
+        Unlock("", "", 1, "2026-11-25 08:57:25")
+    ]
+
+
+def test_record_without_id_is_dropped_unless_allow_all():
+    t = UnlockTracker(ALLOW)
+    t.process([], now=0)
+    assert t.process([AcsRecord("2026-11-25 08:57:25", "", 1)], now=2) == []
+
+
+def test_empty_allowlist_without_allow_all_fires_nothing():
+    t = UnlockTracker({})
+    t.process([], now=0)
+    assert t.process([R], now=2) == []

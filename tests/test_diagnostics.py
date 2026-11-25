@@ -40,6 +40,7 @@ async def test_diagnostics_redacted(hass, config_entry, mock_client, freezer):
     ):
         assert secret not in dump
     assert '"allowlist_size": 1' in dump
+    assert result["allow_all"] is False
     assert result["tracker_primed"] is True
     assert result["last_update_success"] is True
     assert "clock_drift" in result

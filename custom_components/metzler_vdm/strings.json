@@ -37,11 +37,13 @@
         "description": "Which person IDs may trigger an unlock event, and for which doors. Use the person (employee) ID shown in the web UI of the door station, not the card number.",
         "data": {
           "allowlist": "Allowlist",
+          "allow_all": "Allow all valid cards",
           "timezone": "Time zone of the door station",
           "doors": "Doors"
         },
         "data_description": {
-          "allowlist": "One entry per line as ID=Alias, where ID is the person (employee) ID from the web UI of the door station, not the card number. Only listed IDs fire events. An empty list means nothing fires.",
+          "allowlist": "One entry per line as ID=Alias, where ID is the person (employee) ID from the web UI of the door station, not the card number. Only listed IDs fire events. An empty list means nothing fires, unless \"Allow all valid cards\" is enabled.",
+          "allow_all": "If enabled, the allowlist is ignored and every card the door station accepts as valid fires an event, including cards without a person ID. Anyone who can open the door with a card can then also trigger your automation. Entries in the allowlist are only used as aliases. Off by default.",
           "timezone": "Time zone the door station uses for its event times.",
           "doors": "Comma-separated door numbers, e.g. 1 or 1,2."
         }
@@ -77,11 +79,13 @@
         "description": "Which person IDs may trigger an unlock event, and for which doors. Use the person (employee) ID shown in the web UI of the door station, not the card number.",
         "data": {
           "allowlist": "Allowlist",
+          "allow_all": "Allow all valid cards",
           "timezone": "Time zone of the door station",
           "doors": "Doors"
         },
         "data_description": {
-          "allowlist": "One entry per line as ID=Alias, where ID is the person (employee) ID from the web UI of the door station, not the card number. Only listed IDs fire events. An empty list means nothing fires.",
+          "allowlist": "One entry per line as ID=Alias, where ID is the person (employee) ID from the web UI of the door station, not the card number. Only listed IDs fire events. An empty list means nothing fires, unless \"Allow all valid cards\" is enabled.",
+          "allow_all": "If enabled, the allowlist is ignored and every card the door station accepts as valid fires an event, including cards without a person ID. Anyone who can open the door with a card can then also trigger your automation. Entries in the allowlist are only used as aliases. Off by default.",
           "timezone": "Time zone the door station uses for its event times.",
           "doors": "Comma-separated door numbers, e.g. 1 or 1,2."
         }

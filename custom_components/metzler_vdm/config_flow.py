@@ -44,6 +44,7 @@ from .api import (
     parse_fingerprint,
 )
 from .const import (
+    CONF_ALLOW_ALL,
     CONF_ALLOWLIST,
     CONF_DOORS,
     CONF_FINGERPRINT,
@@ -86,6 +87,8 @@ def _access_schema(timezone: str) -> vol.Schema:
             vol.Optional(CONF_ALLOWLIST): TextSelector(
                 TextSelectorConfig(multiline=True)
             ),
+            # Off unless explicitly sent: an omitted field must never open up.
+            vol.Optional(CONF_ALLOW_ALL, default=False): bool,
             vol.Required(CONF_TIMEZONE, default=timezone): SelectSelector(
                 SelectSelectorConfig(
                     options=sorted(available_timezones()),
@@ -114,6 +117,7 @@ def _parse_access(
         return None, errors
     return {
         CONF_ALLOWLIST: allowlist,
+        CONF_ALLOW_ALL: bool(user_input.get(CONF_ALLOW_ALL, False)),
         CONF_TIMEZONE: user_input[CONF_TIMEZONE],
         CONF_DOORS: doors,
     }, errors
@@ -296,6 +300,7 @@ class MetzlerConfigFlow(ConfigFlow, domain=DOMAIN):
                 ),
                 {
                     CONF_ALLOWLIST: defaults.get(CONF_ALLOWLIST, ""),
+                    CONF_ALLOW_ALL: defaults.get(CONF_ALLOW_ALL, False),
                     CONF_DOORS: defaults.get(CONF_DOORS, "1"),
                 },
             ),
@@ -341,7 +346,7 @@ class MetzlerConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class MetzlerOptionsFlow(OptionsFlow):
-    """Edit allowlist, time zone and doors."""
+    """Edit allowlist, allow-all switch, time zone and doors."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -354,6 +359,7 @@ class MetzlerOptionsFlow(OptionsFlow):
                 return self.async_create_entry(data=options)
         current = user_input or {
             CONF_ALLOWLIST: format_allowlist(self.config_entry.options[CONF_ALLOWLIST]),
+            CONF_ALLOW_ALL: self.config_entry.options.get(CONF_ALLOW_ALL, False),
             CONF_TIMEZONE: self.config_entry.options[CONF_TIMEZONE],
             CONF_DOORS: ", ".join(str(d) for d in self.config_entry.options[CONF_DOORS]),
         }
@@ -363,6 +369,7 @@ class MetzlerOptionsFlow(OptionsFlow):
                 _access_schema(current[CONF_TIMEZONE]),
                 {
                     CONF_ALLOWLIST: current.get(CONF_ALLOWLIST, ""),
+                    CONF_ALLOW_ALL: current.get(CONF_ALLOW_ALL, False),
                     CONF_DOORS: current.get(CONF_DOORS, ""),
                 },
             ),

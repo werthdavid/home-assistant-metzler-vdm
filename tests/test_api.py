@@ -101,10 +101,30 @@ async def test_no_matches_without_infolist_is_empty(fake_session, client):
     assert await client.async_search_valid_card_events(START, END) == []
 
 
-async def test_record_without_employee_no_is_skipped(fake_session, client):
+async def test_record_without_employee_no_has_empty_id(fake_session, client):
+    """Cards without a person keep an empty ID; the tracker decides about them."""
     fake_session.add(
-        page([info(omit_employee_no=True), info(""), info("  "), info("1001")])
+        page(
+            [
+                info(omit_employee_no=True, time="2026-11-25 08:57:21"),
+                info("", time="2026-11-25 08:57:22"),
+                info("  ", time="2026-11-25 08:57:23"),
+                info(None, time="2026-11-25 08:57:24"),
+                info("1001"),
+            ]
+        )
     )
+    assert await client.async_search_valid_card_events(START, END) == [
+        AcsRecord("2026-11-25 08:57:21", "", 1),
+        AcsRecord("2026-11-25 08:57:22", "", 1),
+        AcsRecord("2026-11-25 08:57:23", "", 1),
+        AcsRecord("2026-11-25 08:57:24", "", 1),
+        REC,
+    ]
+
+
+async def test_record_with_non_string_employee_no_is_skipped(fake_session, client):
+    fake_session.add(page([info(1001), info(["1001"]), info("1001")]))
     assert await client.async_search_valid_card_events(START, END) == [REC]
 
 

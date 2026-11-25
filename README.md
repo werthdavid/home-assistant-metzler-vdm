@@ -15,6 +15,8 @@ für eine Automation, kein Ersatz für die Zutrittskontrolle der Station.
 - Nur Personen-IDs auf der Positivliste (Allowlist) lösen ein Ereignis aus.
   Gemeint ist die Personen-ID (Mitarbeiternummer, `employeeNoString`) aus der
   Web-Oberfläche der Station, nicht die Kartennummer.
+- Alternativ lässt der Schalter "Alle gültigen Karten zulassen" jede von der
+  Station akzeptierte Karte zu (siehe "Alle gültigen Karten zulassen").
 - Kartennummer und Name aus der Station werden weder gespeichert noch
   protokolliert, angezeigt oder in Diagnosedaten ausgegeben. Verwendet wird
   nur die Mitarbeiter-ID (`employeeNoString`).
@@ -65,7 +67,8 @@ Assistant. Sie erscheinen nicht in Logs oder Diagnosedaten.
   Kartennummer ist nicht gemeint und wird nie ausgewertet.
 - IDs werden als exakte Zeichenketten verglichen (`1001` und `01001` sind
   verschiedene IDs). Doppelte IDs werden abgelehnt.
-- Eine leere Positivliste bedeutet: es wird nichts ausgelöst.
+- Eine leere Positivliste bedeutet: es wird nichts ausgelöst (außer der
+  Schalter "Alle gültigen Karten zulassen" ist an).
 - Änderbar unter "Konfigurieren" der Integration (Optionen). Eine
   Änderung lädt die Integration neu. Der erste erfolgreiche Abruf nach Start,
   Neuladen oder Änderung der Optionen bereitet nur den Zustand vor und löst
@@ -88,7 +91,7 @@ Beispiele):
 
 | Entität | Beschreibung |
 | --- | --- |
-| Ereignis "Gültige Entriegelung Tür N" (`event`, englisch "Valid unlock door N") | Löst bei gültiger Entriegelung einer ID der Positivliste an Tür N aus. Ereignistyp `valid_unlock`. |
+| Ereignis "Gültige Entriegelung Tür N" (`event`, englisch "Valid unlock door N") | Löst bei gültiger Entriegelung einer zugelassenen ID an Tür N aus. Ereignistyp `valid_unlock`. |
 | "Erreichbarkeit" (`binary_sensor`, Diagnose, englisch "Connectivity") | An, solange der letzte Abruf erfolgreich war. Aus bei Ausfall, Zertifikatsabweichung oder abgelehntem Passwort. Nie `unavailable`. |
 
 Attribute des Ereignisses: `employee_no`, `alias`, `door`, `time` (Zeit wie von
@@ -177,8 +180,8 @@ auch die allererste Entriegelung nach dem Anlegen der Entität (Wechsel von
   Konnektivität geht aus und die Reparaturmeldung erscheint.
 - Diagnosedaten enthalten Host, Benutzer, Passwort, Fingerabdruck und
   Positivliste nicht (geschwärzt). Sie zeigen nur den Status des letzten
-  Abrufs, die Uhrabweichung, die Größe der Positivliste, die Zeitzone der
-  Station, die Türen und ob der Merkspeicher nach dem Start vorbereitet ist.
+  Abrufs, die Uhrabweichung, die Größe der Positivliste, den Schalter
+  "Alle gültigen Karten zulassen", die Zeitzone der Station, die Türen und ob der Merkspeicher nach dem Start vorbereitet ist.
 
 ## Datenschutz (DSGVO)
 
@@ -238,13 +241,38 @@ gespeichert oder angezeigt.
   das Debug-Logging der Integration einschalten und den protokollierten
   Status prüfen.
 
+## Alle gültigen Karten zulassen
+
+Für Stationen, deren Personenliste in der Web-Oberfläche leer ist oder deren
+Karten keiner Person zugeordnet sind. Der Schalter steht im Einrichtungsdialog
+und unter "Konfigurieren" und ist standardmäßig aus.
+
+- Ist er an, wird die Positivliste ignoriert. Jede Karte, die die Station als
+  gültig meldet (Major 5, Minor 1), löst das Ereignis aus.
+- Damit gilt: Wer die Tür mit einer Karte öffnen kann, kann auch die
+  Automation auslösen. Eine Karte wird dann nur noch an der Station gesperrt,
+  nicht mehr in Home Assistant.
+- `employee_no` enthält die von der Station gemeldete ID oder ist leer, wenn
+  die Station keine meldet. `alias` ist der Alias aus der Positivliste, sonst
+  gleich `employee_no`.
+- Ist der Schalter aus und die Positivliste leer, löst weiterhin nichts aus.
+  Das Leeren der Liste schaltet also nie stillschweigend alle Karten frei.
+- Welche ID eine Karte meldet, zeigt das Debug-Log
+  (`custom_components.metzler_vdm`) bei ausgeschaltetem Schalter als
+  "unknown ID". Damit lässt sich später eine Positivliste aufbauen.
+
+Ungeprüft am Gerät: ob die Station bei Karten ohne Person eine leere oder
+gar keine `employeeNoString` sendet. Beide Fälle werden als leere ID
+behandelt.
+
 ## Manuelle Abnahme am Gerät
 
 Vor dem produktiven Einsatz prüfen (Positivliste mit mindestens einer
 eigenen Karte, Logbuch öffnen):
 
 1. Erlaubte Karte: genau ein Ereignis innerhalb von etwa 3 s.
-2. Karte, deren ID nicht auf der Positivliste steht: kein Ereignis.
+2. Karte, deren ID nicht auf der Positivliste steht: kein Ereignis (bei
+   ausgeschaltetem Schalter "Alle gültigen Karten zulassen").
 3. Home Assistant direkt nach einer Entriegelung neu starten: kein zweites
    Ereignis, die Automation löst nicht erneut aus.
 4. Falschen Fingerabdruck erzwingen (z. B. Zertifikat der Station tauschen):

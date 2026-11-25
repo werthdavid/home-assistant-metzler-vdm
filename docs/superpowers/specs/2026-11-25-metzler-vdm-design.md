@@ -21,7 +21,7 @@ Türöffnen aus HA, Kamera, Klingel, Verwaltung von Karten/Personen, Push-Events
 ## Anti-Ziele
 
 - Ein Event ohne verifizierte Gegenstelle (kein HTTP, kein `verify_ssl=False`).
-- Ein Event für eine ID außerhalb der Positivliste oder für einen anderen Minor-Code als 1.
+- Ein Event für eine ID außerhalb der Positivliste (solange "Alle gültigen Karten zulassen" aus ist) oder für einen anderen Minor-Code als 1.
 - Ein nachgeholtes oder doppelt gemeldetes Alt-Event.
 - `cardNo`, `name` oder Passwort in Logs, Attributen oder Diagnosedaten.
 
@@ -94,6 +94,13 @@ Ungeprüft: ob der Endpunkt auf Firmware V3.7.1 existiert. Falls nicht (404/notS
 - Positivliste und Aliase im Options-Flow, Format eine Zeile pro Eintrag `ID=Alias`.
 - Türen: Standard Tür 1, weitere in den Optionen.
 - `tracker.py` als HA-freie Logik, damit Dedup/Erststart/Positivliste ohne HA testbar sind.
+
+## Nachtrag 2026-11-25: Alle gültigen Karten zulassen
+
+Auf Wunsch des Nutzers (Personenliste der Station ist leer): Option `allow_all`, Standard aus.
+Ist sie an, wird die Positivliste ignoriert und jeder Datensatz mit Minor 1 löst aus, auch ohne Personen-ID (dann `employee_no` leer).
+Bewusst kein "leere Liste = alle": Das Leeren der Liste darf nie stillschweigend alle Karten freischalten.
+Datensätze ohne `employeeNoString` verwirft der Client nicht mehr, sondern reicht sie mit leerer ID weiter; bei ausgeschalteter Option fallen sie an der Positivliste heraus.
 
 ## Abnahme
 

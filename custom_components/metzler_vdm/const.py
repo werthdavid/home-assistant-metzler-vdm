@@ -18,6 +18,7 @@ MINOR_VALID_CARD = 1
 
 CONF_FINGERPRINT = "fingerprint"
 CONF_ALLOWLIST = "allowlist"
+CONF_ALLOW_ALL = "allow_all"
 CONF_TIMEZONE = "timezone"
 CONF_DOORS = "doors"
 

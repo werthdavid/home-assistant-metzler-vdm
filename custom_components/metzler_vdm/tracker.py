@@ -16,13 +16,13 @@ class AcsRecord:
     """A valid-card access record as reported by the door station."""
 
     time: str  # unchanged from the response, e.g. "2026-11-25 08:57:25"
-    employee_no: str
+    employee_no: str  # "" if the station reports no person ID
     door_no: int
 
 
 @dataclass(frozen=True, slots=True)
 class Unlock:
-    """A new unlock by an allowlisted ID."""
+    """A new unlock by an allowed ID (empty ID: card without a person)."""
 
     employee_no: str
     alias: str
@@ -58,8 +58,20 @@ def format_allowlist(allowlist: Mapping[str, str]) -> str:
 class UnlockTracker:
     """Turn polled access records into new unlock events."""
 
-    def __init__(self, allowlist: Mapping[str, str], seen_ttl: float = SEEN_TTL) -> None:
+    def __init__(
+        self,
+        allowlist: Mapping[str, str],
+        seen_ttl: float = SEEN_TTL,
+        *,
+        allow_all: bool = False,
+    ) -> None:
+        """Set up the tracker.
+
+        With allow_all every valid-card record counts, including cards without
+        a person ID; the allowlist then only supplies aliases.
+        """
         self._allowlist = dict(allowlist)
+        self._allow_all = allow_all
         self._seen_ttl = seen_ttl
         self._seen: dict[tuple[str, str, int], float] = {}
         self._primed = False
@@ -79,6 +91,8 @@ class UnlockTracker:
             if not is_new or not self._primed:
                 continue
             alias = self._allowlist.get(record.employee_no)
+            if alias is None and self._allow_all:
+                alias = record.employee_no
             if alias is None:
                 _LOGGER.debug(
                     "Ignoring unlock of unknown ID %s at door %s",

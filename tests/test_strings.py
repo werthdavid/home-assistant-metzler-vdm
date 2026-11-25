@@ -43,3 +43,13 @@ def test_allowlist_texts_name_the_person_id_not_the_card():
             assert marker in text, name
             assert card in text, name  # explicitly "not the card number"
             assert "card ID" not in text and "Karten-ID" not in text, name
+
+
+def test_allow_all_option_is_described_in_all_languages():
+    for name in ("strings.json", "translations/en.json", "translations/de.json"):
+        data = load(name)
+        for step in (data["config"]["step"]["access"], data["options"]["step"]["init"]):
+            assert step["data"]["allow_all"]
+            assert step["data_description"]["allow_all"]
+    de = load("translations/de.json")["options"]["step"]["init"]["data_description"]
+    assert "ignoriert" in de["allow_all"]

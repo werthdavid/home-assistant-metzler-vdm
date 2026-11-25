@@ -8,7 +8,7 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_ALLOWLIST, CONF_FINGERPRINT
+from .const import CONF_ALLOW_ALL, CONF_ALLOWLIST, CONF_FINGERPRINT
 from .coordinator import MetzlerConfigEntry
 
 TO_REDACT = {
@@ -34,4 +34,5 @@ async def async_get_config_entry_diagnostics(
         "clock_drift": coordinator.clock_drift,
         "tracker_primed": coordinator.tracker_primed,
         "allowlist_size": len(entry.options[CONF_ALLOWLIST]),
+        "allow_all": entry.options.get(CONF_ALLOW_ALL, False),
     }

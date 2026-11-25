@@ -454,3 +454,20 @@ async def test_two_doors_fire_only_matching_entity(
     assert len(bus) == 1
     assert bus[0].data["door"] == 2
     assert bus[0].data["entity_id"] == door2
+
+
+async def test_allow_all_fires_unlisted_id(hass, config_entry, mock_client, freezer):
+    hass.config_entries.async_update_entry(
+        config_entry, options={**config_entry.options, "allow_all": True}
+    )
+    await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
+    mock_client.async_search_valid_card_events.return_value = [
+        AcsRecord("2026-11-25 08:57:25", "9999", 1),
+        AcsRecord("2026-11-25 08:57:26", "", 1),
+    ]
+    await poll(hass, freezer, 3)
+    assert [(e.data["employee_no"], e.data["alias"]) for e in bus] == [
+        ("9999", "9999"),
+        ("", ""),
+    ]

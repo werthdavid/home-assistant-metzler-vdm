@@ -24,6 +24,7 @@ from custom_components.metzler_vdm.api import (
     MetzlerResponseError,
 )
 from custom_components.metzler_vdm.const import (
+    CONF_ALLOW_ALL,
     CONF_ALLOWLIST,
     CONF_DOORS,
     CONF_FINGERPRINT,
@@ -109,6 +110,7 @@ async def test_full_flow_creates_entry(
     }
     assert result["options"] == {
         CONF_ALLOWLIST: {"1001": "Alias A"},
+        CONF_ALLOW_ALL: False,
         CONF_TIMEZONE: "Europe/Berlin",
         CONF_DOORS: [1],
     }
@@ -259,6 +261,7 @@ async def test_options_flow_updates_allowlist_and_reloads(
 
     assert config_entry.options == {
         CONF_ALLOWLIST: {"1001": "Alias A", "1002": "Alias B"},
+        CONF_ALLOW_ALL: False,
         CONF_TIMEZONE: "Europe/Berlin",
         CONF_DOORS: [1, 2],
     }
@@ -413,3 +416,29 @@ async def test_probe_session_registers_no_cleanup_listener(
     assert flow_client.call_args.args[0].closed
     assert close_listeners() == before
     assert "closes the Home Assistant aiohttp session" not in caplog.text
+
+
+async def test_options_flow_enables_allow_all_with_empty_allowlist(
+    hass, config_entry, mock_client
+):
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    keys = {str(k): k for k in result["data_schema"].schema}
+    # Off by default, also for entries created before the option existed.
+    assert keys[CONF_ALLOW_ALL].default() is False
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_ALLOW_ALL: True, CONF_TIMEZONE: "Europe/Berlin", CONF_DOORS: "1"},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert config_entry.options[CONF_ALLOW_ALL] is True
+    assert config_entry.options[CONF_ALLOWLIST] == {}
+
+    # The stored "on" is shown, but an omitted field falls back to off.
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    keys = {str(k): k for k in result["data_schema"].schema}
+    assert keys[CONF_ALLOW_ALL].description == {"suggested_value": True}
+    assert keys[CONF_ALLOW_ALL].default() is False
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_TIMEZONE: "Europe/Berlin", CONF_DOORS: "1"}
+    )
+    assert config_entry.options[CONF_ALLOW_ALL] is False

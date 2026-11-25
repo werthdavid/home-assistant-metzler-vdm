@@ -255,7 +255,11 @@ def _to_records(infos: list[Any]) -> list[AcsRecord]:
         door_no = item.get("doorNo")
         if not isinstance(time, str) or not time:
             continue
-        if not isinstance(employee_no, str) or not employee_no.strip():
+        if employee_no is None or (
+            isinstance(employee_no, str) and not employee_no.strip()
+        ):
+            employee_no = ""  # card without a person; never on an allowlist
+        elif not isinstance(employee_no, str):
             continue
         if not isinstance(door_no, int) or isinstance(door_no, bool):
             continue

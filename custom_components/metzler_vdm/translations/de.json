@@ -37,11 +37,13 @@
         "description": "Welche Personen-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen. Gemeint ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer.",
         "data": {
           "allowlist": "Positivliste",
+          "allow_all": "Alle gültigen Karten zulassen",
           "timezone": "Zeitzone der Türstation",
           "doors": "Türen"
         },
         "data_description": {
-          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. ID ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
+          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. ID ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst, außer \"Alle gültigen Karten zulassen\" ist aktiviert.",
+          "allow_all": "Wenn aktiviert, wird die Positivliste ignoriert und jede Karte, die die Türstation als gültig akzeptiert, löst ein Ereignis aus, auch Karten ohne Personen-ID. Wer die Tür mit einer Karte öffnen kann, kann dann auch deine Automation auslösen. Einträge der Positivliste dienen nur noch als Alias. Standardmäßig aus.",
           "timezone": "Zeitzone, in der die Türstation ihre Ereigniszeiten angibt.",
           "doors": "Kommagetrennte Türnummern, z. B. 1 oder 1,2."
         }
@@ -77,11 +79,13 @@
         "description": "Welche Personen-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen. Gemeint ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer.",
         "data": {
           "allowlist": "Positivliste",
+          "allow_all": "Alle gültigen Karten zulassen",
           "timezone": "Zeitzone der Türstation",
           "doors": "Türen"
         },
         "data_description": {
-          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. ID ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
+          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. ID ist die Personen-ID (Mitarbeiternummer) aus der Web-Oberfläche der Türstation, nicht die Kartennummer. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst, außer \"Alle gültigen Karten zulassen\" ist aktiviert.",
+          "allow_all": "Wenn aktiviert, wird die Positivliste ignoriert und jede Karte, die die Türstation als gültig akzeptiert, löst ein Ereignis aus, auch Karten ohne Personen-ID. Wer die Tür mit einer Karte öffnen kann, kann dann auch deine Automation auslösen. Einträge der Positivliste dienen nur noch als Alias. Standardmäßig aus.",
           "timezone": "Zeitzone, in der die Türstation ihre Ereigniszeiten angibt.",
           "doors": "Kommagetrennte Türnummern, z. B. 1 oder 1,2."
         }

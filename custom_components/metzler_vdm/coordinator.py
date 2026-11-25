@@ -22,6 +22,7 @@ from .api import (
     MetzlerNotSupportedError,
 )
 from .const import (
+    CONF_ALLOW_ALL,
     CONF_ALLOWLIST,
     CONF_DOORS,
     CONF_TIMEZONE,
@@ -62,7 +63,10 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         self._client = client
         self._tz = ZoneInfo(entry.options[CONF_TIMEZONE])
         self._doors: list[int] = list(entry.options[CONF_DOORS])
-        self._tracker = UnlockTracker(entry.options[CONF_ALLOWLIST])
+        self._tracker = UnlockTracker(
+            entry.options[CONF_ALLOWLIST],
+            allow_all=entry.options.get(CONF_ALLOW_ALL, False),
+        )
         self._drift_supported = True
         self._next_drift_check = 0.0
         self.clock_drift: float | None = None
