@@ -96,9 +96,6 @@ Assistant-Bus ausgelöst: `metzler_vdm_valid_unlock` mit den Daten `entry_id`,
   verarbeitet und die Konnektivität ist aus. Die Meldung ist nicht per Klick
   behebbar. Die Behebung erfolgt über "Neu konfigurieren" (neuer Fingerabdruck
   wird angezeigt und muss bestätigt werden), nicht durch stilles Übernehmen.
-  Hinweis: der Text der Meldung empfiehlt derzeit stattdessen, die Integration
-  zu entfernen und neu einzurichten. Beides führt zum Ziel, "Neu
-  konfigurieren" ist der kürzere Weg.
 - Uhrabweichung: etwa stündlich wird die Uhr der Station mit Home Assistant
   verglichen. Ab 10 s Abweichung erscheint eine Meldung, weil Ereignisse dann
   verspätet oder gar nicht erkannt werden können. Unterstützt die Firmware

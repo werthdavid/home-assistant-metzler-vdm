@@ -107,7 +107,7 @@
   "issues": {
     "certificate_mismatch": {
       "title": "Door station certificate changed",
-      "description": "The certificate of the door station no longer matches the stored fingerprint. No unlock events are processed until this is resolved. If the certificate was changed intentionally, remove and set up the integration again."
+      "description": "The certificate of the door station no longer matches the stored fingerprint. No unlock events are processed until this is resolved. Open the integration and choose Reconfigure: the new fingerprint is shown and must be confirmed, the allowlist and options are kept. Before you confirm, compare the new fingerprint with the certificate shown in the web UI of the door station. If you did not change the certificate, an unexpected change can mean an attack: do not confirm."
     },
     "clock_drift": {
       "title": "Door station clock is off",

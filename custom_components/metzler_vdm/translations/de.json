@@ -107,7 +107,7 @@
   "issues": {
     "certificate_mismatch": {
       "title": "Zertifikat der Türstation geändert",
-      "description": "Das Zertifikat der Türstation stimmt nicht mehr mit dem gespeicherten Fingerabdruck überein. Bis zur Klärung werden keine Entriegelungs-Ereignisse verarbeitet. Wurde das Zertifikat absichtlich geändert, entferne die Integration und richte sie neu ein."
+      "description": "Das Zertifikat der Türstation stimmt nicht mehr mit dem gespeicherten Fingerabdruck überein. Bis zur Klärung werden keine Entriegelungs-Ereignisse verarbeitet. Öffne die Integration und wähle Neu konfigurieren: der neue Fingerabdruck wird angezeigt und muss bestätigt werden, Positivliste und Optionen bleiben erhalten. Vergleiche den neuen Fingerabdruck vor der Bestätigung mit dem Zertifikat in der Web-Oberfläche der Türstation. Hast du das Zertifikat nicht geändert, kann eine unerwartete Änderung auf einen Angriff hindeuten: dann nicht bestätigen."
     },
     "clock_drift": {
       "title": "Uhr der Türstation weicht ab",
