@@ -78,3 +78,10 @@ def test_parse_allowlist():
     with pytest.raises(AllowlistError):
         parse_allowlist("1001=A\n1001=B")
     assert parse_allowlist(format_allowlist({"1": "x"})) == {"1": "x"}
+
+
+def test_ids_are_compared_as_exact_strings():
+    t = UnlockTracker({"0101": "A"})
+    t.process([], now=0)
+    assert t.process([AcsRecord("2026-11-25 08:57:25", "101", 1)], now=1) == []
+    assert len(t.process([AcsRecord("2026-11-25 08:57:25", "0101", 1)], now=2)) == 1
