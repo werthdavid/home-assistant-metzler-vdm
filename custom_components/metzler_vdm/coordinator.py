@@ -66,6 +66,11 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         self._next_drift_check = 0.0
         self.clock_drift: float | None = None
 
+    @property
+    def tracker_primed(self) -> bool:
+        """Return whether the first successful poll has been processed."""
+        return self._tracker.primed
+
     def issue_id(self, key: str) -> str:
         """Return the per-entry issue id for a translation key."""
         return f"{key}_{self.config_entry.entry_id}"
