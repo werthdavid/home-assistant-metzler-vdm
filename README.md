@@ -241,6 +241,15 @@ gespeichert oder angezeigt.
   das Debug-Logging der Integration einschalten und den protokollierten
   Status prüfen.
 
+## Icon
+
+Das Icon liegt unter `custom_components/metzler_vdm/brand/` (`icon.png`
+256 px, `icon@2x.png` 512 px, `icon.svg` als Quelle). Es ist ein eigenes
+Motiv und kein Herstellerlogo. Home Assistant lädt Icons aus diesem Ordner
+erst in neueren Versionen (nach Kenntnisstand ab 2026.3, nicht verifiziert);
+ältere Versionen und HACS zeigen ein Icon nur, wenn es im Repository
+`home-assistant/brands` eingetragen ist.
+
 ## Alle gültigen Karten zulassen
 
 Für Stationen, deren Personenliste in der Web-Oberfläche leer ist oder deren
