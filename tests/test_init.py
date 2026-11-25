@@ -428,3 +428,29 @@ async def test_failing_clock_query_retried_after_60_s_not_every_poll(
     await poll(hass, freezer, 29)
     assert mock_client.async_get_device_time.await_count == 2
     assert hass.states.get(conn_id(hass, config_entry)).state == STATE_ON
+
+
+async def test_two_doors_fire_only_matching_entity(
+    hass, config_entry, mock_client, freezer
+):
+    from custom_components.metzler_vdm.const import CONF_DOORS
+
+    hass.config_entries.async_update_entry(
+        config_entry, options={**config_entry.options, CONF_DOORS: [1, 2]}
+    )
+    await setup(hass, config_entry)
+    door1 = event_id(hass, config_entry, 1)
+    door2 = event_id(hass, config_entry, 2)
+    changes1 = track_events(hass, door1)
+    changes2 = track_events(hass, door2)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
+    mock_client.async_search_valid_card_events.return_value = [
+        AcsRecord("2026-11-25 08:57:25", "1001", 2)
+    ]
+    await poll(hass, freezer, 3)
+    assert changes1 == []
+    assert len(changes2) == 1
+    assert hass.states.get(door2).attributes["door"] == 2
+    assert len(bus) == 1
+    assert bus[0].data["door"] == 2
+    assert bus[0].data["entity_id"] == door2

@@ -362,6 +362,8 @@ async def test_reconfigure_updates_fingerprint_keeps_options(
     assert result["reason"] == "reconfigure_successful"
     assert config_entry.data[CONF_FINGERPRINT] == "02" * 32
     assert config_entry.options == options_before
+    # The probe pinned the new fingerprint.
+    assert flow_client.call_args.args[1:] == (HOST, bytes.fromhex("02" * 32))
 
 
 async def test_reconfigure_to_existing_host_aborts(
