@@ -1,0 +1,24 @@
+{
+  "entity": {
+    "event": {
+      "valid_unlock": {
+        "name": "Valid unlock door {door}"
+      }
+    },
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Connectivity"
+      }
+    }
+  },
+  "issues": {
+    "certificate_mismatch": {
+      "title": "Door station certificate changed",
+      "description": "The certificate of the door station no longer matches the stored fingerprint. No unlock events are processed until this is resolved. If the certificate was changed intentionally, remove and set up the integration again."
+    },
+    "clock_drift": {
+      "title": "Door station clock is off",
+      "description": "The clock of the door station differs from Home Assistant by {seconds} seconds. Unlock events may be missed or delayed. Please correct the time on the door station."
+    }
+  }
+}
