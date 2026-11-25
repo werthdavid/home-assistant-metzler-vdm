@@ -6,11 +6,12 @@ from homeassistant.components.event import EventEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_DOORS, EVENT_VALID_UNLOCK as BUS_EVENT_VALID_UNLOCK
+from .const import CONF_DOORS, EVENT_VALID_UNLOCK
 from .coordinator import MetzlerConfigEntry, MetzlerCoordinator
 from .entity import MetzlerEntity
 
-EVENT_VALID_UNLOCK = "valid_unlock"
+# Entity event type; EVENT_VALID_UNLOCK is the bus event type.
+EVENT_TYPE_VALID_UNLOCK = "valid_unlock"
 
 
 async def async_setup_entry(
@@ -28,8 +29,8 @@ async def async_setup_entry(
 class ValidUnlockEvent(MetzlerEntity, EventEntity):
     """Fires when an allowlisted ID unlocks the door."""
 
-    _attr_event_types = [EVENT_VALID_UNLOCK]
-    _attr_translation_key = EVENT_VALID_UNLOCK
+    _attr_event_types = [EVENT_TYPE_VALID_UNLOCK]
+    _attr_translation_key = EVENT_TYPE_VALID_UNLOCK
 
     def __init__(
         self, coordinator: MetzlerCoordinator, entry: MetzlerConfigEntry, door: int
@@ -58,10 +59,10 @@ class ValidUnlockEvent(MetzlerEntity, EventEntity):
                     "door": unlock.door_no,
                     "time": unlock.time,
                 }
-                self._trigger_event(EVENT_VALID_UNLOCK, payload)
+                self._trigger_event(EVENT_TYPE_VALID_UNLOCK, payload)
                 # Restore-proof signal: entity state is restored on reload.
                 self.hass.bus.async_fire(
-                    BUS_EVENT_VALID_UNLOCK,
+                    EVENT_VALID_UNLOCK,
                     {
                         "entry_id": self.coordinator.config_entry.entry_id,
                         "entity_id": self.entity_id,
