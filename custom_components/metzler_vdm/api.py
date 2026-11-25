@@ -17,6 +17,8 @@ from uuid import uuid4
 from xml.etree import ElementTree
 
 import aiohttp
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .const import MAJOR, MAX_PAGES, MINOR_VALID_CARD, PAGE_SIZE, REQUEST_TIMEOUT
 from .tracker import AcsRecord
@@ -65,6 +67,16 @@ def parse_fingerprint(text: str) -> bytes:
 def format_fingerprint(raw: bytes) -> str:
     """Format raw bytes as upper-case colon-separated hex."""
     return ":".join(f"{b:02X}" for b in raw)
+
+
+def create_digest_session(
+    hass: HomeAssistant, username: str, password: str
+) -> aiohttp.ClientSession:
+    """Create a client session that authenticates with HTTP digest."""
+    return async_create_clientsession(
+        hass,
+        middlewares=(aiohttp.DigestAuthMiddleware(username, password),),
+    )
 
 
 async def async_fetch_fingerprint(host: str, port: int = 443) -> bytes:

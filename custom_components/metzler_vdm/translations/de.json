@@ -1,0 +1,117 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit der Türstation verbinden",
+        "description": "Gib Adresse und Zugangsdaten der Türstation ein. Die Verbindung erfolgt ausschließlich per HTTPS mit festgelegtem Zertifikat.",
+        "data": {
+          "host": "Host",
+          "username": "Benutzername",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "host": "Nur Hostname oder IPv4-Adresse, ohne https://, Port oder Pfad."
+        }
+      },
+      "reconfigure": {
+        "title": "Türstation neu konfigurieren",
+        "description": "Gib die neue Adresse oder neue Zugangsdaten ein. Das Zertifikat wird erneut geprüft und muss bestätigt werden.",
+        "data": {
+          "host": "Host",
+          "username": "Benutzername",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "host": "Nur Hostname oder IPv4-Adresse, ohne https://, Port oder Pfad."
+        }
+      },
+      "fingerprint": {
+        "title": "Zertifikat-Fingerabdruck bestätigen",
+        "description": "Die Türstation hat ein Zertifikat mit diesem SHA-256-Fingerabdruck vorgelegt:\n\n{fingerprint}\n\nÖffne die Web-Oberfläche der Türstation und vergleiche diesen Wert mit dem dort angezeigten Zertifikat, bevor du bestätigst. Bestätige nur, wenn beide übereinstimmen. Zugangsdaten werden erst nach der Bestätigung gesendet.",
+        "data": {
+          "confirm": "Der Fingerabdruck stimmt mit dem Zertifikat der Türstation überein"
+        }
+      },
+      "access": {
+        "title": "Zugriffsregeln",
+        "description": "Welche Karten-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen.",
+        "data": {
+          "allowlist": "Positivliste",
+          "timezone": "Zeitzone der Türstation",
+          "doors": "Türen"
+        },
+        "data_description": {
+          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
+          "timezone": "Zeitzone, in der die Türstation ihre Ereigniszeiten angibt.",
+          "doors": "Kommagetrennte Türnummern, z. B. 1 oder 1,2."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Die Türstation hat das gespeicherte Passwort abgelehnt. Gib das aktuelle Passwort ein.",
+        "data": {
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur Türstation fehlgeschlagen.",
+      "invalid_host": "Nur Hostname oder IPv4-Adresse eingeben, ohne Schema, Port oder Pfad.",
+      "not_confirmed": "Du musst den Fingerabdruck bestätigen.",
+      "invalid_auth": "Benutzername oder Passwort abgelehnt.",
+      "certificate_changed": "Das Zertifikat stimmt nicht mit dem bestätigten Fingerabdruck überein.",
+      "unexpected_response": "Die Türstation hat eine unerwartete Antwort geliefert.",
+      "invalid_allowlist": "Ungültige Positivliste. Eine ID=Alias pro Zeile, keine doppelten IDs.",
+      "invalid_doors": "Türnummern ab 1 kommagetrennt eingeben."
+    },
+    "abort": {
+      "already_configured": "Diese Türstation ist bereits eingerichtet.",
+      "reauth_successful": "Erneute Anmeldung erfolgreich.",
+      "reconfigure_successful": "Neukonfiguration erfolgreich."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zugriffsregeln",
+        "description": "Welche Karten-IDs ein Entriegelungs-Ereignis auslösen dürfen und für welche Türen.",
+        "data": {
+          "allowlist": "Positivliste",
+          "timezone": "Zeitzone der Türstation",
+          "doors": "Türen"
+        },
+        "data_description": {
+          "allowlist": "Ein Eintrag pro Zeile im Format ID=Alias. Nur gelistete IDs lösen Ereignisse aus. Eine leere Liste bedeutet, dass nichts auslöst.",
+          "timezone": "Zeitzone, in der die Türstation ihre Ereigniszeiten angibt.",
+          "doors": "Kommagetrennte Türnummern, z. B. 1 oder 1,2."
+        }
+      }
+    },
+    "error": {
+      "invalid_allowlist": "Ungültige Positivliste. Eine ID=Alias pro Zeile, keine doppelten IDs.",
+      "invalid_doors": "Türnummern ab 1 kommagetrennt eingeben."
+    }
+  },
+  "entity": {
+    "event": {
+      "valid_unlock": {
+        "name": "Gültige Entriegelung Tür {door}"
+      }
+    },
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Erreichbarkeit"
+      }
+    }
+  },
+  "issues": {
+    "certificate_mismatch": {
+      "title": "Zertifikat der Türstation geändert",
+      "description": "Das Zertifikat der Türstation stimmt nicht mehr mit dem gespeicherten Fingerabdruck überein. Bis zur Klärung werden keine Entriegelungs-Ereignisse verarbeitet. Wurde das Zertifikat absichtlich geändert, entferne die Integration und richte sie neu ein."
+    },
+    "clock_drift": {
+      "title": "Uhr der Türstation weicht ab",
+      "description": "Die Uhr der Türstation weicht um {seconds} Sekunden von Home Assistant ab. Entriegelungs-Ereignisse können verpasst oder verzögert werden. Bitte korrigiere die Uhrzeit an der Türstation."
+    }
+  }
+}

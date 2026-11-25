@@ -1,4 +1,97 @@
 {
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to the door station",
+        "description": "Enter the address and credentials of the door station. The connection is HTTPS only with a pinned certificate.",
+        "data": {
+          "host": "Host",
+          "username": "Username",
+          "password": "Password"
+        },
+        "data_description": {
+          "host": "Host name or IPv4 address only, without https://, port or path."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure the door station",
+        "description": "Enter the new address or credentials. The certificate is checked again and must be confirmed.",
+        "data": {
+          "host": "Host",
+          "username": "Username",
+          "password": "Password"
+        },
+        "data_description": {
+          "host": "Host name or IPv4 address only, without https://, port or path."
+        }
+      },
+      "fingerprint": {
+        "title": "Confirm certificate fingerprint",
+        "description": "The door station presented a certificate with this SHA-256 fingerprint:\n\n{fingerprint}\n\nOpen the web UI of the door station and compare this value with the certificate shown there before you confirm. Only confirm if both match. Credentials are sent only after you confirm.",
+        "data": {
+          "confirm": "The fingerprint matches the door station certificate"
+        }
+      },
+      "access": {
+        "title": "Access rules",
+        "description": "Which card IDs may trigger an unlock event, and for which doors.",
+        "data": {
+          "allowlist": "Allowlist",
+          "timezone": "Time zone of the door station",
+          "doors": "Doors"
+        },
+        "data_description": {
+          "allowlist": "One entry per line as ID=Alias. Only listed IDs fire events. An empty list means nothing fires.",
+          "timezone": "Time zone the door station uses for its event times.",
+          "doors": "Comma-separated door numbers, e.g. 1 or 1,2."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "The door station rejected the stored password. Enter the current password.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the door station.",
+      "invalid_host": "Enter only a host name or IPv4 address, without scheme, port or path.",
+      "not_confirmed": "You must confirm the fingerprint.",
+      "invalid_auth": "Username or password rejected.",
+      "certificate_changed": "The certificate does not match the confirmed fingerprint.",
+      "unexpected_response": "The door station returned an unexpected response.",
+      "invalid_allowlist": "Invalid allowlist. Use one ID=Alias per line, without duplicate IDs.",
+      "invalid_doors": "Enter door numbers of 1 or higher, separated by commas."
+    },
+    "abort": {
+      "already_configured": "This door station is already configured.",
+      "reauth_successful": "Re-authentication successful.",
+      "reconfigure_successful": "Reconfiguration successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Access rules",
+        "description": "Which card IDs may trigger an unlock event, and for which doors.",
+        "data": {
+          "allowlist": "Allowlist",
+          "timezone": "Time zone of the door station",
+          "doors": "Doors"
+        },
+        "data_description": {
+          "allowlist": "One entry per line as ID=Alias. Only listed IDs fire events. An empty list means nothing fires.",
+          "timezone": "Time zone the door station uses for its event times.",
+          "doors": "Comma-separated door numbers, e.g. 1 or 1,2."
+        }
+      }
+    },
+    "error": {
+      "invalid_allowlist": "Invalid allowlist. Use one ID=Alias per line, without duplicate IDs.",
+      "invalid_doors": "Enter door numbers of 1 or higher, separated by commas."
+    }
+  },
   "entity": {
     "event": {
       "valid_unlock": {

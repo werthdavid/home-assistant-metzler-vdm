@@ -33,6 +33,7 @@ def config_entry(hass):
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Metzler VDM",
+        unique_id="192.0.2.10",
         data={
             "host": "192.0.2.10",
             "username": "test-user",

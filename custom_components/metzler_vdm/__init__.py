@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import aiohttp
-
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from .api import MetzlerClient, parse_fingerprint
+from .api import MetzlerClient, create_digest_session, parse_fingerprint
 from .const import CONF_FINGERPRINT, DOMAIN
 from .coordinator import (
     ISSUE_CERTIFICATE,
@@ -23,13 +20,8 @@ PLATFORMS = [Platform.EVENT, Platform.BINARY_SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: MetzlerConfigEntry) -> bool:
     """Set up Metzler VDM from a config entry."""
-    session = async_create_clientsession(
-        hass,
-        middlewares=(
-            aiohttp.DigestAuthMiddleware(
-                entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
-            ),
-        ),
+    session = create_digest_session(
+        hass, entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
     )
     client = MetzlerClient(
         session, entry.data[CONF_HOST], parse_fingerprint(entry.data[CONF_FINGERPRINT])
