@@ -123,6 +123,10 @@ automation:
         event_data:
           door: 1
     conditions:
+      # Pflicht: nur das lokal und ohne Benutzerkontext ausgelöste Ereignis
+      # der Integration zulassen (siehe Sicherheitshinweise).
+      - condition: template
+        value_template: "{{ trigger.event.context.user_id is none and (trigger.event.origin | string) == 'LOCAL' }}"
       - condition: state
         entity_id: binary_sensor.metzler_vdm_erreichbarkeit   # Platzhalter, eigenen Entitätsnamen eintragen
         state: "on"
@@ -150,6 +154,12 @@ oder Neuladen wie eine Entriegelung wirken.
 - Eine gültige Karte ist ein einzelner Faktor. Karten können kopiert werden
   (je nach Kartentyp). Ein zweites Signal in der Automation (Anwesenheit,
   Tageszeit) ist empfohlen.
+- Den Ereignistyp `metzler_vdm_valid_unlock` können auch andere Integrationen
+  und Nutzer der Companion-App (Webhook `fire_event` von `mobile_app`, ohne
+  Admin-Rechte) auslösen. Die erste Bedingung der Beispiel-Automation
+  (lokaler Ursprung, kein Benutzerkontext) ist deshalb Pflicht. Admins und
+  Skripte können das Ereignis immer auslösen, das ist in Home Assistant
+  grundsätzlich so.
 - Die Integration ändert nichts an der Station und schaltet keine Tür.
 - Der Alarmcode gehört in `secrets.yaml`, nicht in die Automation.
 - Zugangsdaten werden nur an das bestätigte, festgelegte Zertifikat gesendet.
