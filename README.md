@@ -165,8 +165,25 @@ Die Ereignis-Historie in Home Assistant (Logbuch, Recorder) ist ein
 personenbezogenes Zutrittsprotokoll: sie enthält ID bzw. Alias und
 Zeitpunkt der Entriegelung. Empfehlung:
 
-- Die Aufbewahrungsdauer des Recorders (`purge_keep_days`) begrenzen und die
-  Entitäten bei Bedarf über `recorder: exclude` ausschließen.
+- Die Aufbewahrungsdauer des Recorders (`purge_keep_days`) begrenzen. Sie gilt
+  für Zustände und für Ereignisse.
+- Es gibt zwei Spuren: die Zustände/Attribute der Ereignis-Entität und das
+  Bus-Ereignis `metzler_vdm_valid_unlock` (Daten: `employee_no`, `alias`,
+  `door`, `time`). Der Recorder schreibt Bus-Ereignisse standardmäßig in seine
+  Ereignistabelle. Ein Ausschluss nur der Entität ist deshalb nicht
+  verlässlich. Beides ausschließen, wenn kein Protokoll gewünscht ist:
+
+  ```yaml
+  recorder:
+    exclude:
+      entity_globs:
+        - event.metzler_vdm_*
+      event_types:
+        - metzler_vdm_valid_unlock
+  ```
+
+  Entitätsnamen sind Platzhalter, eigene eintragen. Auch dann sieht das Logbuch
+  die Entriegelungen nicht mehr, Automationen sind nicht betroffen.
 - Nur Aliase verwenden, die keine Rückschlüsse über das nötige Maß hinaus
   erlauben.
 - Beachten, wer Zugriff auf Logbuch und Verlauf hat.
