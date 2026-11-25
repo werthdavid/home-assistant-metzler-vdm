@@ -167,6 +167,19 @@ async def test_pii_never_leaves_client(fake_session, client, caplog):
     assert "PLACEHOLDER" not in caplog.text
 
 
+async def test_undecodable_body_maps_to_response_error(fake_session, client):
+    raw = b"PLACEHOLDER_CARD PLACEHOLDER_NAME \xe4"
+    for exc in (
+        UnicodeDecodeError("utf-8", raw, 33, 34, "invalid"),
+        LookupError("unknown encoding: PLACEHOLDER_NAME"),
+    ):
+        fake_session.queue.append((200, exc))
+        with pytest.raises(MetzlerResponseError) as err:
+            await client.async_search_valid_card_events(START, END)
+        assert "PLACEHOLDER" not in repr(err.value)
+        assert "PLACEHOLDER" not in str(err.value)
+
+
 def test_parse_fingerprint():
     assert parse_fingerprint("ab:CD " * 16) == bytes.fromhex("abcd" * 16)
     for bad in ("", "abcd", "zz" * 32):

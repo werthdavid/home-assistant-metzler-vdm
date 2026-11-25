@@ -68,6 +68,8 @@ class FakeResponse:
         self._body = body
 
     async def text(self) -> str:
+        if isinstance(self._body, BaseException):
+            raise self._body
         return self._body
 
 

@@ -125,7 +125,10 @@ class MetzlerClient:
                     raise MetzlerConnectionError(f"Device error (HTTP {status})")
                 if status != 200:
                     raise MetzlerResponseError(f"Unexpected status (HTTP {status})")
-                return await response.text()
+                try:
+                    return await response.text()
+                except (UnicodeDecodeError, LookupError):
+                    raise MetzlerResponseError("Unexpected response format") from None
         except aiohttp.ServerFingerprintMismatch:
             raise MetzlerCertificateError("Certificate fingerprint mismatch") from None
         except TimeoutError:
