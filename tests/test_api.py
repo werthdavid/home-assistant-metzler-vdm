@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta, timezone
+import json
 import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -240,3 +241,70 @@ async def test_fetch_fingerprint_connection_error():
     with patch("custom_components.metzler_vdm.api.asyncio.open_connection", opener):
         with pytest.raises(MetzlerConnectionError):
             await async_fetch_fingerprint(HOST)
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        {"responseStatusStrg": "FAILED"},
+        {"responseStatusStrg": "FAILED", "InfoList": []},
+        {"responseStatusStrg": "ok", "InfoList": []},
+        {"responseStatusStrg": 1, "InfoList": []},
+        {"responseStatusStrg": None},
+        {"InfoList": []},
+        {},
+    ],
+)
+async def test_unknown_or_missing_status_raises(fake_session, client, event):
+    fake_session.add(json.dumps({"AcsEvent": event}))
+    with pytest.raises(MetzlerResponseError):
+        await client.async_search_valid_card_events(START, END)
+
+
+@pytest.mark.parametrize("infos", ["", 0, False, {}, "x", {"a": 1}, None])
+@pytest.mark.parametrize("status", ["OK", "NO MATCH", "MORE"])
+async def test_non_list_infolist_raises(fake_session, client, status, infos):
+    fake_session.add(
+        json.dumps(
+            {
+                "AcsEvent": {
+                    "responseStatusStrg": status,
+                    "numOfMatches": 1,
+                    "InfoList": infos,
+                }
+            }
+        )
+    )
+    with pytest.raises(MetzlerResponseError):
+        await client.async_search_valid_card_events(START, END)
+
+
+async def test_ok_without_infolist_is_empty(fake_session, client):
+    fake_session.add(json.dumps({"AcsEvent": {"responseStatusStrg": "OK"}}))
+    assert await client.async_search_valid_card_events(START, END) == []
+
+
+async def test_unexpected_status_logged_sanitised(fake_session, client, caplog):
+    caplog.set_level(logging.DEBUG, logger="custom_components.metzler_vdm")
+    status = "FAIL\x1b\n\x00ED" + "X" * 60
+    fake_session.add(
+        json.dumps(
+            {"AcsEvent": {"responseStatusStrg": status, "InfoList": [info()]}}
+        )
+    )
+    with pytest.raises(MetzlerResponseError):
+        await client.async_search_valid_card_events(START, END)
+    expected = ("FAILED" + "X" * 60)[:32]
+    assert repr(expected) in caplog.text or expected in caplog.text
+    assert "X" * 33 not in caplog.text
+    assert "\x1b" not in caplog.text
+    assert "\x00" not in caplog.text
+    assert "PLACEHOLDER" not in caplog.text
+
+    caplog.clear()
+    fake_session.add(
+        json.dumps({"AcsEvent": {"responseStatusStrg": {"x": "PLACEHOLDER_NAME"}}})
+    )
+    with pytest.raises(MetzlerResponseError):
+        await client.async_search_valid_card_events(START, END)
+    assert "PLACEHOLDER" not in caplog.text

@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import ssl
 from datetime import datetime, tzinfo
 from typing import Any
@@ -26,6 +27,10 @@ from .tracker import AcsRecord
 _ACS_EVENT_PATH = "/ISAPI/AccessControl/AcsEvent?format=json"
 _TIME_PATH = "/ISAPI/System/time"
 _FINGERPRINT_LENGTH = 32
+_VALID_STATUSES = ("OK", "MORE", "NO MATCH")
+_STATUS_LOG_LENGTH = 32
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class MetzlerError(Exception):
@@ -171,11 +176,17 @@ class MetzlerClient:
             }
             text = await self._request("POST", _ACS_EVENT_PATH, json=body)
             event = _parse_acs_event(text)
-            infos = event.get("InfoList") or []
+            status = event.get("responseStatusStrg")
+            if status not in _VALID_STATUSES:
+                _LOGGER.debug(
+                    "Unexpected AcsEvent status %r", _sanitise_status(status)
+                )
+                raise MetzlerResponseError("Unexpected response status")
+            infos = event.get("InfoList", [])
             if not isinstance(infos, list):
                 raise MetzlerResponseError("Unexpected response format")
             records.extend(_to_records(infos))
-            if event.get("responseStatusStrg") != "MORE":
+            if status != "MORE":
                 return records
             matches = event.get("numOfMatches")
             if not isinstance(matches, int) or isinstance(matches, bool) or matches <= 0:
@@ -214,6 +225,13 @@ def _parse_acs_event(text: str) -> dict[str, Any]:
     if not isinstance(event, dict):
         raise MetzlerResponseError("Unexpected response format")
     return event
+
+
+def _sanitise_status(status: Any) -> str | None:
+    """Return a loggable form of an unexpected status; never other data."""
+    if not isinstance(status, str):
+        return None
+    return "".join(ch for ch in status if ch.isprintable())[:_STATUS_LOG_LENGTH]
 
 
 def _to_records(infos: list[Any]) -> list[AcsRecord]:

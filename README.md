@@ -213,6 +213,12 @@ gespeichert oder angezeigt.
   Festlegen des Zertifikats (die Unit-Tests simulieren die HTTP-Schicht), die
   Unterstützung von `/ISAPI/System/time` durch die Firmware und ein Benutzer
   mit minimalen Rechten statt Admin.
+- Ebenfalls ungeprüft: `NO MATCH` als Antwort ohne Treffer stammt aus der
+  ISAPI-Dokumentation und ist am Gerät nicht verifiziert. Akzeptiert werden
+  nur die Status `OK`, `MORE` und `NO MATCH`, jeder andere gilt als
+  Fehler. Bleibt die Erreichbarkeit aus, obwohl die Station erreichbar ist,
+  das Debug-Logging der Integration einschalten und den protokollierten
+  Status prüfen.
 
 ## Manuelle Abnahme am Gerät
 
