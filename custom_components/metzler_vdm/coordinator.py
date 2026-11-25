@@ -27,6 +27,7 @@ from .const import (
     CONF_TIMEZONE,
     DOMAIN,
     DRIFT_CHECK_INTERVAL,
+    DRIFT_RETRY_INTERVAL,
     DRIFT_THRESHOLD,
     END_AHEAD_HOURS,
     POLL_INTERVAL,
@@ -77,6 +78,8 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
 
     async def _async_update_data(self) -> list[Unlock]:
         """Fetch records; fire nothing unless everything succeeded."""
+        # Before the search: nothing after tracker.process may fail the poll.
+        await self._async_check_clock()
         # Absolute-time arithmetic in UTC, then formatted in the station time
         # zone: wall-clock arithmetic in a DST zone would shift the window by
         # an hour around the switch.
@@ -106,7 +109,6 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         for unlock in unlocks:
             if unlock.door_no not in self._doors:
                 _LOGGER.debug("Ignoring unlock at unconfigured door %s", unlock.door_no)
-        await self._async_check_clock()
         return unlocks
 
     async def _async_check_clock(self) -> None:
@@ -117,6 +119,14 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         if monotonic < self._next_drift_check:
             return
         try:
+            await self._async_check_clock_now(monotonic)
+        except Exception as err:  # noqa: BLE001 - must never fail the poll
+            _LOGGER.debug("Device time check failed (%s)", type(err).__name__)
+            self._next_drift_check = monotonic + DRIFT_RETRY_INTERVAL
+
+    async def _async_check_clock_now(self, monotonic: float) -> None:
+        """Query the device time, store the drift and update the issue."""
+        try:
             device_time = await self._client.async_get_device_time(self._tz)
         except MetzlerNotSupportedError:
             _LOGGER.debug("Device time not supported; clock check disabled")
@@ -124,12 +134,8 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
             self.clock_drift = None
             ir.async_delete_issue(self.hass, DOMAIN, self.issue_id(ISSUE_CLOCK_DRIFT))
             return
-        except Exception as err:  # noqa: BLE001 - must never fail the poll
-            _LOGGER.debug("Device time query failed (%s)", type(err).__name__)
-            return
-
-        self._next_drift_check = monotonic + DRIFT_CHECK_INTERVAL
         drift = (device_time - dt_util.utcnow()).total_seconds()
+        self._next_drift_check = monotonic + DRIFT_CHECK_INTERVAL
         self.clock_drift = drift
         if abs(drift) >= DRIFT_THRESHOLD:
             ir.async_create_issue(

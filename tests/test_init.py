@@ -374,3 +374,57 @@ async def test_unload_closes_session(hass, config_entry, mock_client):
     assert await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
     assert session.closed
+
+
+async def test_clock_check_runs_before_search(hass, config_entry, mock_client):
+    from homeassistant.util import dt as dt_util
+
+    order: list[str] = []
+
+    async def device_time(tz):
+        order.append("time")
+        return dt_util.utcnow()
+
+    async def search(start, end):
+        order.append("search")
+        return []
+
+    mock_client.async_get_device_time.side_effect = device_time
+    mock_client.async_search_valid_card_events.side_effect = search
+    await setup(hass, config_entry)
+    assert order == ["time", "search"]
+
+
+async def test_clock_drift_computation_error_does_not_lose_unlock(
+    hass, config_entry, mock_client, freezer
+):
+    """A naive device time makes the drift computation raise; poll still succeeds."""
+    from datetime import datetime
+
+    await setup(hass, config_entry)
+    bus = async_capture_events(hass, EVENT_VALID_UNLOCK)
+    mock_client.async_get_device_time.side_effect = lambda tz: datetime(
+        2026, 11, 25, 8, 0, 0
+    )
+    mock_client.async_search_valid_card_events.return_value = [R]
+    freezer.tick(timedelta(seconds=3600))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert mock_client.async_get_device_time.await_count == 2
+    assert hass.states.get(conn_id(hass, config_entry)).state == STATE_ON
+    assert len(bus) == 1
+
+
+async def test_failing_clock_query_retried_after_60_s_not_every_poll(
+    hass, config_entry, mock_client, freezer
+):
+    mock_client.async_get_device_time.side_effect = MetzlerConnectionError("down")
+    await setup(hass, config_entry)
+    assert mock_client.async_get_device_time.await_count == 1
+    await poll(hass, freezer, 29)  # 58 s
+    assert mock_client.async_get_device_time.await_count == 1
+    await poll(hass, freezer, 1)  # 60 s
+    assert mock_client.async_get_device_time.await_count == 2
+    await poll(hass, freezer, 29)
+    assert mock_client.async_get_device_time.await_count == 2
+    assert hass.states.get(conn_id(hass, config_entry)).state == STATE_ON
