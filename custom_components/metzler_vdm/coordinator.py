@@ -1,4 +1,4 @@
-"""Coordinator polling the door station for valid unlocks."""
+"""Coordinator polling the door station for valid unlocks and doorbell rings."""
 
 from __future__ import annotations
 
@@ -22,6 +22,8 @@ from .api import (
     MetzlerNotSupportedError,
 )
 from .const import (
+    CALL_STATUS_RETRY_INTERVAL,
+    CALL_STATUS_RING,
     CONF_ALLOW_ALL,
     CONF_ALLOWLIST,
     CONF_DOORS,
@@ -70,6 +72,10 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         self._drift_supported = True
         self._next_drift_check = 0.0
         self.clock_drift: float | None = None
+        self.call_status_supported = True
+        self.call_status: str | None = None  # None: unknown
+        self._next_call_status = 0.0
+        self.ring_started = False
 
     @property
     def tracker_primed(self) -> bool:
@@ -84,6 +90,7 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         """Fetch records; fire nothing unless everything succeeded."""
         # Before the search: nothing after tracker.process may fail the poll.
         await self._async_check_clock()
+        self.ring_started = await self._async_check_ring()
         # Absolute-time arithmetic in UTC, then formatted in the station time
         # zone: wall-clock arithmetic in a DST zone would shift the window by
         # an hour around the switch.
@@ -114,6 +121,33 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
             if unlock.door_no not in self._doors:
                 _LOGGER.debug("Ignoring unlock at unconfigured door %s", unlock.door_no)
         return unlocks
+
+    async def _async_check_ring(self) -> bool:
+        """Return True when a ring started since the last poll; never raises.
+
+        Only a change from a known non-ring status to "ring" counts, so a ring
+        already running at start or after an error is not reported.
+        """
+        if not self.call_status_supported:
+            return False
+        monotonic = time.monotonic()
+        if monotonic < self._next_call_status:
+            return False
+        previous = self.call_status
+        try:
+            status = await self._client.async_get_call_status()
+        except MetzlerNotSupportedError:
+            _LOGGER.debug("Call status not supported; doorbell polling disabled")
+            self.call_status_supported = False
+            self.call_status = None
+            return False
+        except Exception as err:  # noqa: BLE001 - must never fail the poll
+            _LOGGER.debug("Call status query failed (%s)", type(err).__name__)
+            self.call_status = None
+            self._next_call_status = monotonic + CALL_STATUS_RETRY_INTERVAL
+            return False
+        self.call_status = status
+        return status == CALL_STATUS_RING and previous not in (None, CALL_STATUS_RING)
 
     async def _async_check_clock(self) -> None:
         """Compare the station clock with Home Assistant; never fails the poll."""

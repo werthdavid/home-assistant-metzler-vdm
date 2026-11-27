@@ -343,3 +343,41 @@ async def test_redirects_are_not_followed(fake_session, client):
         fake_session.add("", status)
         with pytest.raises(MetzlerResponseError):
             await client.async_search_valid_card_events(START, END)
+
+
+async def test_call_status(fake_session, client):
+    fake_session.add('{"CallStatus": {"status": "idle"}}')
+    fake_session.add('{\n\t"CallStatus":\t{\n\t\t"status":\t"ring"\n\t}\n}')
+    assert await client.async_get_call_status() == "idle"
+    assert await client.async_get_call_status() == "ring"
+    call = fake_session.calls[0]
+    assert call.method == "GET"
+    assert call.url == "https://192.0.2.10/ISAPI/VideoIntercom/callStatus?format=json"
+    assert isinstance(call.kwargs["ssl"], aiohttp.Fingerprint)
+    assert call.kwargs["allow_redirects"] is False
+    # Shorter than the search timeout: it must not hold up unlock polling.
+    assert call.kwargs["timeout"].total == 2
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "not json",
+        "[]",
+        "{}",
+        '{"CallStatus": "ring"}',
+        '{"CallStatus": {}}',
+        '{"CallStatus": {"status": ""}}',
+        '{"CallStatus": {"status": 1}}',
+    ],
+)
+async def test_call_status_malformed_raises(fake_session, client, body):
+    fake_session.add(body)
+    with pytest.raises(MetzlerResponseError):
+        await client.async_get_call_status()
+
+
+async def test_call_status_not_supported(fake_session, client):
+    fake_session.add("", 404)
+    with pytest.raises(MetzlerNotSupportedError):
+        await client.async_get_call_status()

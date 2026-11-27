@@ -92,6 +92,7 @@ Beispiele):
 | Entität | Beschreibung |
 | --- | --- |
 | Ereignis "Gültige Entriegelung Tür N" (`event`, englisch "Valid unlock door N") | Löst bei gültiger Entriegelung einer zugelassenen ID an Tür N aus. Ereignistyp `valid_unlock`. |
+| Ereignis "Klingel" (`event`, Geräteklasse `doorbell`, englisch "Doorbell") | Löst mit Ereignistyp `ring` aus, sobald an der Station geklingelt wird. Keine Attribute. |
 | "Erreichbarkeit" (`binary_sensor`, Diagnose, englisch "Connectivity") | An, solange der letzte Abruf erfolgreich war. Aus bei Ausfall, Zertifikatsabweichung oder abgelehntem Passwort. Nie `unavailable`. |
 
 Attribute des Ereignisses: `employee_no`, `alias`, `door`, `time` (Zeit wie von
@@ -240,6 +241,43 @@ gespeichert oder angezeigt.
   Fehler. Bleibt die Erreichbarkeit aus, obwohl die Station erreichbar ist,
   das Debug-Logging der Integration einschalten und den protokollierten
   Status prüfen.
+
+## Klingel
+
+Die Integration fragt bei jedem Abruf zusätzlich den Rufstatus der Station ab
+(`/ISAPI/VideoIntercom/callStatus`). Wechselt er von einem bekannten anderen
+Zustand auf `ring`, löst die Entität "Klingel" einmal aus.
+
+- Am Gerät geprüft: Im Ruhezustand meldet die Station `idle`, während des
+  Klingelns `ring` (im Test rund 9 Sekunden lang).
+- Ein Klingeln, das kürzer als das Abrufintervall von 2 Sekunden dauert, kann
+  unbemerkt bleiben.
+- Läuft beim Start, nach einem Neuladen oder nach einem Fehler der
+  Rufstatus-Abfrage bereits ein Klingeln, wird es nicht gemeldet.
+- Die Klingel ist unabhängig von Positivliste und Entriegelung. Ein Fehler der
+  Rufstatus-Abfrage beeinflusst weder die Entriegelungs-Ereignisse noch die
+  Erreichbarkeit; die Abfrage wird dann erst nach 60 Sekunden erneut versucht.
+  Kennt die Firmware den Endpunkt nicht (HTTP 404), wird die Abfrage
+  abgeschaltet.
+- Für Automationen den Zustands-Trigger mit
+  `not_from: ["unavailable", "unknown"]` verwenden: Home Assistant stellt den
+  letzten Zustand nach Neustart oder Neuladen wieder her, das sähe sonst wie
+  ein neues Klingeln aus.
+- Klingelzeiten landen im Logbuch und im Recorder von Home Assistant.
+
+Beispiel (Benachrichtigung, Entitätsnamen sind Platzhalter):
+
+```yaml
+alias: Benachrichtigung bei Klingeln
+triggers:
+  - trigger: state
+    entity_id: event.metzler_vdm_klingel
+    not_from: ["unavailable", "unknown"]
+actions:
+  - action: notify.notify
+    data:
+      message: Es hat geklingelt.
+```
 
 ## Icon
 

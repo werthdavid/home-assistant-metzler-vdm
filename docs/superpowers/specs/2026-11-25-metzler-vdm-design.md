@@ -102,6 +102,14 @@ Ist sie an, wird die Positivliste ignoriert und jeder Datensatz mit Minor 1 lös
 Bewusst kein "leere Liste = alle": Das Leeren der Liste darf nie stillschweigend alle Karten freischalten.
 Datensätze ohne `employeeNoString` verwirft der Client nicht mehr, sondern reicht sie mit leerer ID weiter; bei ausgeschalteter Option fallen sie an der Positivliste heraus.
 
+## Nachtrag 2026-11-27: Klingel
+
+Auf Wunsch des Nutzers, entgegen dem ursprünglichen Nicht-Ziel "Klingel".
+Am Gerät verifiziert: `GET /ISAPI/VideoIntercom/callStatus?format=json` liefert `{"CallStatus": {"status": "idle"}}` und während des Klingelns `"ring"`.
+Im `AcsEvent`-Log wurde kein eindeutiger Klingel-Eintrag gefunden (ein Kandidat Major 3 / Minor 1029 trat auch nachts ohne Klingeln auf).
+Umsetzung: Rufstatus pro Poll vor der Suche, Timeout 2 s, bei Fehler 60 s Pause, bei 404 dauerhaft aus; nie ein Grund für einen fehlgeschlagenen Poll.
+Event-Entität "Klingel" (`doorbell`, Typ `ring`) feuert nur beim Wechsel von einem bekannten Nicht-`ring`-Status auf `ring`.
+
 ## Abnahme
 
 Kriterien 1 bis 7 aus dem Handoff. 1 bis 5 brauchen das echte Gerät, 6 und 7 werden durch Unit-Tests abgedeckt.

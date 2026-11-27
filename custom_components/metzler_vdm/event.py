@@ -1,8 +1,8 @@
-"""Event entities, one per configured door."""
+"""Event entities: valid unlock per configured door, and the doorbell."""
 
 from __future__ import annotations
 
-from homeassistant.components.event import EventEntity
+from homeassistant.components.event import EventDeviceClass, EventEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -12,6 +12,7 @@ from .entity import MetzlerEntity
 
 # Entity event type; EVENT_VALID_UNLOCK is the bus event type.
 EVENT_TYPE_VALID_UNLOCK = "valid_unlock"
+EVENT_TYPE_RING = "ring"
 
 
 async def async_setup_entry(
@@ -19,10 +20,15 @@ async def async_setup_entry(
     entry: MetzlerConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up one event entity per door."""
+    """Set up one unlock entity per door and the doorbell entity."""
     async_add_entities(
-        ValidUnlockEvent(entry.runtime_data, entry, door)
-        for door in entry.options[CONF_DOORS]
+        [
+            *(
+                ValidUnlockEvent(entry.runtime_data, entry, door)
+                for door in entry.options[CONF_DOORS]
+            ),
+            DoorbellEvent(entry.runtime_data, entry),
+        ]
     )
 
 
@@ -69,4 +75,31 @@ class ValidUnlockEvent(MetzlerEntity, EventEntity):
                         **payload,
                     },
                 )
+        super()._handle_coordinator_update()
+
+
+class DoorbellEvent(MetzlerEntity, EventEntity):
+    """Fires when the station starts ringing (call status changes to "ring")."""
+
+    _attr_device_class = EventDeviceClass.DOORBELL
+    _attr_event_types = [EVENT_TYPE_RING]
+    _attr_translation_key = "doorbell"
+
+    def __init__(
+        self, coordinator: MetzlerCoordinator, entry: MetzlerConfigEntry
+    ) -> None:
+        """Initialize the doorbell entity."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_doorbell"
+
+    @property
+    def available(self) -> bool:
+        """Stay available, like the unlock entities."""
+        return True
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Fire once per started ring, only after a successful poll."""
+        if self.coordinator.last_update_success and self.coordinator.ring_started:
+            self._trigger_event(EVENT_TYPE_RING)
         super()._handle_coordinator_update()

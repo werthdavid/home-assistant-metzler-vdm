@@ -53,3 +53,9 @@ def test_allow_all_option_is_described_in_all_languages():
             assert step["data_description"]["allow_all"]
     de = load("translations/de.json")["options"]["step"]["init"]["data_description"]
     assert "ignoriert" in de["allow_all"]
+
+
+def test_doorbell_entity_is_named_in_all_languages():
+    for name in ("strings.json", "translations/en.json", "translations/de.json"):
+        assert load(name)["entity"]["event"]["doorbell"]["name"]
+    assert load("translations/de.json")["entity"]["event"]["doorbell"]["name"] == "Klingel"

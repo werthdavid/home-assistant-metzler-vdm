@@ -35,4 +35,6 @@ async def async_get_config_entry_diagnostics(
         "tracker_primed": coordinator.tracker_primed,
         "allowlist_size": len(entry.options[CONF_ALLOWLIST]),
         "allow_all": entry.options.get(CONF_ALLOW_ALL, False),
+        "call_status": coordinator.call_status,
+        "call_status_supported": coordinator.call_status_supported,
     }

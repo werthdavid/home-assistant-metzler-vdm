@@ -21,11 +21,19 @@ import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from .const import MAJOR, MAX_PAGES, MINOR_VALID_CARD, PAGE_SIZE, REQUEST_TIMEOUT
+from .const import (
+    CALL_STATUS_TIMEOUT,
+    MAJOR,
+    MAX_PAGES,
+    MINOR_VALID_CARD,
+    PAGE_SIZE,
+    REQUEST_TIMEOUT,
+)
 from .tracker import AcsRecord
 
 _ACS_EVENT_PATH = "/ISAPI/AccessControl/AcsEvent?format=json"
 _TIME_PATH = "/ISAPI/System/time"
+_CALL_STATUS_PATH = "/ISAPI/VideoIntercom/callStatus?format=json"
 _FINGERPRINT_LENGTH = 32
 _VALID_STATUSES = ("OK", "MORE", "NO MATCH")
 _STATUS_LOG_LENGTH = 32
@@ -129,14 +137,16 @@ class MetzlerClient:
         self._base = f"https://{host}"
         self._ssl = aiohttp.Fingerprint(fingerprint)
 
-    async def _request(self, method: str, path: str, **kwargs: Any) -> str:
+    async def _request(
+        self, method: str, path: str, *, timeout: float = REQUEST_TIMEOUT, **kwargs: Any
+    ) -> str:
         """Send one pinned request and return the body text."""
         try:
             async with self._session.request(
                 method,
                 f"{self._base}{path}",
                 ssl=self._ssl,
-                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
+                timeout=aiohttp.ClientTimeout(total=timeout),
                 allow_redirects=False,
                 **kwargs,
             ) as response:
@@ -221,6 +231,21 @@ class MetzlerClient:
         except ValueError:
             raise MetzlerResponseError("Unexpected response format") from None
         return parsed if parsed.tzinfo else parsed.replace(tzinfo=default_tz)
+
+    async def async_get_call_status(self) -> str:
+        """Return the intercom call status, e.g. "idle" or "ring"."""
+        text = await self._request(
+            "GET", _CALL_STATUS_PATH, timeout=CALL_STATUS_TIMEOUT
+        )
+        try:
+            data = json.loads(text)
+        except ValueError:
+            raise MetzlerResponseError("Unexpected response format") from None
+        call = data.get("CallStatus") if isinstance(data, dict) else None
+        status = call.get("status") if isinstance(call, dict) else None
+        if not isinstance(status, str) or not status:
+            raise MetzlerResponseError("Unexpected response format")
+        return status
 
 
 def _parse_acs_event(text: str) -> dict[str, Any]:
