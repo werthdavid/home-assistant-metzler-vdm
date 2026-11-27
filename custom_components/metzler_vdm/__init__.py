@@ -15,7 +15,7 @@ from .coordinator import (
     MetzlerCoordinator,
 )
 
-PLATFORMS = [Platform.EVENT, Platform.BINARY_SENSOR]
+PLATFORMS = [Platform.EVENT, Platform.BINARY_SENSOR, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: MetzlerConfigEntry) -> bool:

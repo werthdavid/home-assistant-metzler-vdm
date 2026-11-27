@@ -59,3 +59,15 @@ def test_doorbell_entity_is_named_in_all_languages():
     for name in ("strings.json", "translations/en.json", "translations/de.json"):
         assert load(name)["entity"]["event"]["doorbell"]["name"]
     assert load("translations/de.json")["entity"]["event"]["doorbell"]["name"] == "Klingel"
+
+
+def test_call_status_sensor_states_are_translated():
+    for name in ("strings.json", "translations/en.json", "translations/de.json"):
+        sensor = load(name)["entity"]["sensor"]["call_status"]
+        assert sensor["name"]
+        assert set(sensor["state"]) == {"idle", "ring", "on_call", "other"}
+
+
+def test_remote_unlock_entity_is_named_in_all_languages():
+    for name in ("strings.json", "translations/en.json", "translations/de.json"):
+        assert "{door}" in load(name)["entity"]["event"]["remote_unlock"]["name"]

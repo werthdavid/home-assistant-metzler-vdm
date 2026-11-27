@@ -381,3 +381,35 @@ async def test_call_status_not_supported(fake_session, client):
     fake_session.add("", 404)
     with pytest.raises(MetzlerNotSupportedError):
         await client.async_get_call_status()
+
+
+async def test_search_remote_unlock_events(fake_session, client):
+    """Minor 158: door opened remotely (seen for the indoor station)."""
+    fake_session.add(
+        page(
+            [
+                info(omit_employee_no=True, minor=158, time="2026-11-25 08:57:24"),
+                info("1001", minor=1),  # a valid-card record must never leak in here
+                info(omit_employee_no=True, minor=21),
+            ]
+        )
+    )
+    assert await client.async_search_remote_unlock_events(START, END) == [
+        AcsRecord("2026-11-25 08:57:24", "", 1)
+    ]
+    cond = fake_session.calls[0].kwargs["json"]["AcsEventCond"]
+    assert (cond["major"], cond["minor"]) == (5, 158)
+    assert isinstance(fake_session.calls[0].kwargs["ssl"], aiohttp.Fingerprint)
+
+
+async def test_valid_card_search_ignores_remote_unlock_records(fake_session, client):
+    fake_session.add(page([info(omit_employee_no=True, minor=158), info("1001")]))
+    assert await client.async_search_valid_card_events(START, END) == [REC]
+    assert fake_session.calls[0].kwargs["json"]["AcsEventCond"]["minor"] == 1
+
+
+async def test_remote_unlock_record_never_carries_an_id(fake_session, client):
+    fake_session.add(page([info("1001", minor=158)]))
+    assert await client.async_search_remote_unlock_events(START, END) == [
+        AcsRecord("2026-11-25 08:57:25", "", 1)
+    ]

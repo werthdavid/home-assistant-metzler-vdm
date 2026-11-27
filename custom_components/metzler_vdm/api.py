@@ -25,6 +25,7 @@ from .const import (
     CALL_STATUS_TIMEOUT,
     MAJOR,
     MAX_PAGES,
+    MINOR_REMOTE_UNLOCK,
     MINOR_VALID_CARD,
     PAGE_SIZE,
     REQUEST_TIMEOUT,
@@ -175,6 +176,18 @@ class MetzlerClient:
         self, start: datetime, end: datetime
     ) -> list[AcsRecord]:
         """Return valid-card events in [start, end], following paging."""
+        return await self._async_search(MINOR_VALID_CARD, start, end)
+
+    async def async_search_remote_unlock_events(
+        self, start: datetime, end: datetime
+    ) -> list[AcsRecord]:
+        """Return remote-unlock events in [start, end]; they carry no person ID."""
+        return await self._async_search(MINOR_REMOTE_UNLOCK, start, end)
+
+    async def _async_search(
+        self, minor: int, start: datetime, end: datetime
+    ) -> list[AcsRecord]:
+        """Search events of one minor code, following paging."""
         if start.tzinfo is None or end.tzinfo is None:
             raise ValueError("start and end must be timezone-aware")
         search_id = uuid4().hex
@@ -187,7 +200,7 @@ class MetzlerClient:
                     "searchResultPosition": position,
                     "maxResults": PAGE_SIZE,
                     "major": MAJOR,
-                    "minor": MINOR_VALID_CARD,
+                    "minor": minor,
                     "startTime": start.isoformat(timespec="seconds"),
                     "endTime": end.isoformat(timespec="seconds"),
                 }
@@ -203,7 +216,7 @@ class MetzlerClient:
             infos = event.get("InfoList", [])
             if not isinstance(infos, list):
                 raise MetzlerResponseError("Unexpected response format")
-            records.extend(_to_records(infos))
+            records.extend(_to_records(infos, minor))
             if status != "MORE":
                 return records
             matches = event.get("numOfMatches")
@@ -267,16 +280,19 @@ def _sanitise_status(status: Any) -> str | None:
     return "".join(ch for ch in status if ch.isprintable())[:_STATUS_LOG_LENGTH]
 
 
-def _to_records(infos: list[Any]) -> list[AcsRecord]:
-    """Convert InfoList entries; only the needed fields are read."""
+def _to_records(infos: list[Any], minor: int) -> list[AcsRecord]:
+    """Convert InfoList entries of the given minor; only needed fields are read."""
     records: list[AcsRecord] = []
     for item in infos:
         if not isinstance(item, dict):
             continue
-        if item.get("major") != MAJOR or item.get("minor") != MINOR_VALID_CARD:
+        if item.get("major") != MAJOR or item.get("minor") != minor:
             continue
         time = item.get("time")
-        employee_no = item.get("employeeNoString")
+        # Only valid-card records identify a person.
+        employee_no = (
+            item.get("employeeNoString") if minor == MINOR_VALID_CARD else None
+        )
         door_no = item.get("doorNo")
         if not isinstance(time, str) or not time:
             continue

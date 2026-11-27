@@ -103,11 +103,25 @@
       },
       "doorbell": {
         "name": "Klingel"
+      },
+      "remote_unlock": {
+        "name": "Fernöffnung Tür {door}"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Erreichbarkeit"
+      }
+    },
+    "sensor": {
+      "call_status": {
+        "name": "Rufstatus",
+        "state": {
+          "idle": "Ruhe",
+          "ring": "Klingelt",
+          "on_call": "Im Gespräch",
+          "other": "Sonstiges"
+        }
       }
     }
   },

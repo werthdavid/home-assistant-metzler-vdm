@@ -18,6 +18,8 @@ CALL_STATUS_RING = "ring"
 
 MAJOR = 5
 MINOR_VALID_CARD = 1
+MINOR_REMOTE_UNLOCK = 158  # door opened remotely, e.g. from the indoor station
+REMOTE_UNLOCK_RETRY_INTERVAL = 60
 
 CONF_FINGERPRINT = "fingerprint"
 CONF_ALLOWLIST = "allowlist"

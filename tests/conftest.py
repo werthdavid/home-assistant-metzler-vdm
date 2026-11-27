@@ -63,6 +63,7 @@ def mock_client(freezer):
         client = client_cls.return_value
         client.async_search_valid_card_events = AsyncMock(return_value=[])
         client.async_get_call_status = AsyncMock(return_value="idle")
+        client.async_search_remote_unlock_events = AsyncMock(return_value=[])
         client.async_get_device_time = AsyncMock(
             side_effect=lambda tz: dt_util.utcnow()
         )

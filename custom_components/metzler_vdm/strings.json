@@ -103,11 +103,25 @@
       },
       "doorbell": {
         "name": "Doorbell"
+      },
+      "remote_unlock": {
+        "name": "Remote unlock door {door}"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Connectivity"
+      }
+    },
+    "sensor": {
+      "call_status": {
+        "name": "Call status",
+        "state": {
+          "idle": "Idle",
+          "ring": "Ringing",
+          "on_call": "In call",
+          "other": "Other"
+        }
       }
     }
   },

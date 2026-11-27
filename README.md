@@ -92,7 +92,9 @@ Beispiele):
 | Entität | Beschreibung |
 | --- | --- |
 | Ereignis "Gültige Entriegelung Tür N" (`event`, englisch "Valid unlock door N") | Löst bei gültiger Entriegelung einer zugelassenen ID an Tür N aus. Ereignistyp `valid_unlock`. |
+| Ereignis "Fernöffnung Tür N" (`event`, englisch "Remote unlock door N") | Löst mit Ereignistyp `remote_unlock` aus, wenn die Tür ohne Karte aus der Ferne geöffnet wird, z. B. von der Innenstation. Attribute: `door`, `time`. |
 | Ereignis "Klingel" (`event`, Geräteklasse `doorbell`, englisch "Doorbell") | Löst mit Ereignistyp `ring` aus, sobald an der Station geklingelt wird. Keine Attribute. |
+| "Rufstatus" (`sensor`, englisch "Call status") | Aktueller Rufstatus der Station: Ruhe (`idle`), Klingelt (`ring`), Im Gespräch (`on_call`) oder Sonstiges (`other`). Das Attribut `raw_status` zeigt den Wert, wie ihn die Station meldet. |
 | "Erreichbarkeit" (`binary_sensor`, Diagnose, englisch "Connectivity") | An, solange der letzte Abruf erfolgreich war. Aus bei Ausfall, Zertifikatsabweichung oder abgelehntem Passwort. Nie `unavailable`. |
 
 Attribute des Ereignisses: `employee_no`, `alias`, `door`, `time` (Zeit wie von
@@ -242,6 +244,29 @@ gespeichert oder angezeigt.
   das Debug-Logging der Integration einschalten und den protokollierten
   Status prüfen.
 
+## Fernöffnung
+
+Wird die Tür von der Innenstation aus geöffnet, schreibt die Station einen
+eigenen Eintrag ins Ereignis-Log (ISAPI Major 5, Minor 158). Die Entität
+"Fernöffnung Tür N" löst dafür einmal aus.
+
+- Am Gerät geprüft: Öffnen von der Innenstation erzeugt Minor 158, Öffnen mit
+  gültiger Karte nicht. Ob auch eine Öffnung per App oder Web-Oberfläche
+  Minor 158 erzeugt, ist ungeprüft.
+- Das Ereignis ist rein informativ. Es löst weder "Gültige Entriegelung" noch
+  das Bus-Ereignis `metzler_vdm_valid_unlock` aus und eignet sich nicht zum
+  Entschärfen einer Alarmanlage.
+- Es gelten dieselben Regeln wie bei der Entriegelung: Abruf alle 2 Sekunden
+  über ein 60-Sekunden-Fenster, der erste erfolgreiche Abruf nach dem Start
+  meldet nichts.
+- Ein Fehler dieser Abfrage beeinflusst die Entriegelungs-Ereignisse nicht;
+  sie wird dann erst nach 60 Sekunden erneut versucht.
+- Für Automationen den Zustands-Trigger mit
+  `not_from: ["unavailable", "unknown"]` verwenden (siehe "Klingel").
+
+Eine abgewiesene, nicht angelernte Karte lässt sich nicht melden: Im Test
+hat die Station dafür keinen Eintrag ins Ereignis-Log geschrieben.
+
 ## Klingel
 
 Die Integration fragt bei jedem Abruf zusätzlich den Rufstatus der Station ab
@@ -264,6 +289,11 @@ Zustand auf `ring`, löst die Entität "Klingel" einmal aus.
   letzten Zustand nach Neustart oder Neuladen wieder her, das sähe sonst wie
   ein neues Klingeln aus.
 - Klingelzeiten landen im Logbuch und im Recorder von Home Assistant.
+- Der Sensor "Rufstatus" zeigt denselben Wert fortlaufend an. Am Gerät
+  gesehen wurden bisher nur `idle` und `ring`. `onCall` (Gespräch angenommen)
+  ist von Hikvision-Geräten bekannt, an dieser Station aber ungeprüft; meldet
+  sie etwas anderes, zeigt der Sensor "Sonstiges" und `raw_status` den
+  tatsächlichen Wert.
 
 Beispiel (Benachrichtigung, Entitätsnamen sind Platzhalter):
 

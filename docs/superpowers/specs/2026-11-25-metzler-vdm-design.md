@@ -110,6 +110,18 @@ Im `AcsEvent`-Log wurde kein eindeutiger Klingel-Eintrag gefunden (ein Kandidat 
 Umsetzung: Rufstatus pro Poll vor der Suche, Timeout 2 s, bei Fehler 60 s Pause, bei 404 dauerhaft aus; nie ein Grund für einen fehlgeschlagenen Poll.
 Event-Entität "Klingel" (`doorbell`, Typ `ring`) feuert nur beim Wechsel von einem bekannten Nicht-`ring`-Status auf `ring`.
 
+## Nachtrag 2026-11-27: Rufstatus-Sensor und Fernöffnung
+
+Am Gerät verifiziert (Log-Abfrage ohne Filter rund um drei Aktionen):
+- Gültige Karte: Minor 21, 1, 214, 22 (wie im Handoff).
+- Öffnen von der Innenstation: Minor 21, **158**, 214 (ohne Kartenfelder), 22.
+- Nicht angelernte Karte: kein Log-Eintrag. Ein Event "abgewiesene Karte" ist damit nicht umsetzbar.
+
+Umsetzung:
+- Sensor "Rufstatus" (enum: idle, ring, on_call, other) aus dem ohnehin abgefragten Rufstatus. `onCall` ist am Gerät ungeprüft.
+- Event-Entität "Fernöffnung Tür N" aus einer zweiten `AcsEvent`-Suche mit Minor 158, eigener Merkspeicher, vor der Kartensuche abgefragt, erst nach deren Erfolg ausgewertet; bei Fehler 60 s Pause.
+- Die Kartensuche (Minor 1) und ihr Filter bleiben unverändert; Minor-158-Datensätze tragen nie eine Personen-ID und lösen nie `valid_unlock` aus.
+
 ## Abnahme
 
 Kriterien 1 bis 7 aus dem Handoff. 1 bis 5 brauchen das echte Gerät, 6 und 7 werden durch Unit-Tests abgedeckt.

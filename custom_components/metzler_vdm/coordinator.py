@@ -34,9 +34,10 @@ from .const import (
     DRIFT_THRESHOLD,
     END_AHEAD_HOURS,
     POLL_INTERVAL,
+    REMOTE_UNLOCK_RETRY_INTERVAL,
     WINDOW_SECONDS,
 )
-from .tracker import Unlock, UnlockTracker
+from .tracker import AcsRecord, Unlock, UnlockTracker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +77,10 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         self.call_status: str | None = None  # None: unknown
         self._next_call_status = 0.0
         self.ring_started = False
+        # Remote unlocks (no person): separate dedup, never mixed with cards.
+        self._remote_tracker = UnlockTracker({}, allow_all=True)
+        self._next_remote_search = 0.0
+        self.remote_unlocks: list[Unlock] = []
 
     @property
     def tracker_primed(self) -> bool:
@@ -95,11 +100,12 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
         # zone: wall-clock arithmetic in a DST zone would shift the window by
         # an hour around the switch.
         now = dt_util.utcnow()
+        start = (now - timedelta(seconds=WINDOW_SECONDS)).astimezone(self._tz)
+        end = (now + timedelta(hours=END_AHEAD_HOURS)).astimezone(self._tz)
+        self.remote_unlocks = []
+        remote_records = await self._async_search_remote_unlocks(start, end)
         try:
-            records = await self._client.async_search_valid_card_events(
-                (now - timedelta(seconds=WINDOW_SECONDS)).astimezone(self._tz),
-                (now + timedelta(hours=END_AHEAD_HOURS)).astimezone(self._tz),
-            )
+            records = await self._client.async_search_valid_card_events(start, end)
         except MetzlerCertificateError as err:
             ir.async_create_issue(
                 self.hass,
@@ -116,11 +122,27 @@ class MetzlerCoordinator(DataUpdateCoordinator[list[Unlock]]):
             raise UpdateFailed(str(err)) from err
 
         ir.async_delete_issue(self.hass, DOMAIN, self.issue_id(ISSUE_CERTIFICATE))
-        unlocks = self._tracker.process(records, time.monotonic())
+        monotonic = time.monotonic()
+        unlocks = self._tracker.process(records, monotonic)
+        if remote_records is not None:
+            # Consumed only now, so a failed card search loses no remote unlock.
+            self.remote_unlocks = self._remote_tracker.process(remote_records, monotonic)
         for unlock in unlocks:
             if unlock.door_no not in self._doors:
                 _LOGGER.debug("Ignoring unlock at unconfigured door %s", unlock.door_no)
         return unlocks
+
+    async def _async_search_remote_unlocks(self, start, end) -> list[AcsRecord] | None:
+        """Return remote-unlock records, or None if unavailable; never raises."""
+        monotonic = time.monotonic()
+        if monotonic < self._next_remote_search:
+            return None
+        try:
+            return await self._client.async_search_remote_unlock_events(start, end)
+        except Exception as err:  # noqa: BLE001 - must never fail the poll
+            _LOGGER.debug("Remote unlock search failed (%s)", type(err).__name__)
+            self._next_remote_search = monotonic + REMOTE_UNLOCK_RETRY_INTERVAL
+            return None
 
     async def _async_check_ring(self) -> bool:
         """Return True when a ring started since the last poll; never raises.
